@@ -1,0 +1,4 @@
+- Fire MAIN GUNS to build HEAT
+- Destroy lifeless rocks and collect various MINERALS
+- Use HEAT to react MINERALS together
+- Eject REACTED PRODUCTS and detonate FUSION BOMBS nearby to turn them into EXOTIC MATTER
