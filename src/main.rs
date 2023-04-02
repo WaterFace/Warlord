@@ -10,13 +10,6 @@ mod player;
 mod starfield_image;
 
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    commands.spawn((
-        Camera2dBundle {
-            ..Default::default()
-        },
-        camera::MainCamera,
-    ));
-
     let star_field = images.add(starfield_image::BasicStarField::default().build(Extent3d {
         width: 1024,
         height: 1024,
@@ -29,7 +22,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         ..Default::default()
     });
 
-    commands
+    let player = commands
         .spawn(player::PlayerBundle::default())
         .insert(SpriteBundle {
             texture: images.add(Image::new_fill(
@@ -44,6 +37,19 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
             )),
             transform: Transform::from_xyz(0.0, 0.0, 1.0),
             ..Default::default()
+        })
+        .id();
+
+    commands
+        .spawn((
+            Camera2dBundle {
+                ..Default::default()
+            },
+            camera::MainCamera,
+        ))
+        .insert(camera::SmoothFollow {
+            target: Some(player),
+            ..Default::default()
         });
 }
 
@@ -52,6 +58,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(physics::PhysicsPlugin::default())
         .add_plugin(player::PlayerPlugin)
+        .add_plugin(camera::CameraPlugin)
         .insert_resource(ClearColor(Color::BLACK))
         .add_startup_system(setup)
         .run();
