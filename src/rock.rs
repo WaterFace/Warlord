@@ -39,11 +39,29 @@ impl Default for RockSpawner {
 struct RockAppearance {
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
+    side_length: f32,
 }
 
 struct SpawnEvent {
     number_of_rocks: usize,
     centre_of_region: Vec2,
+}
+
+#[derive(Component, Default, Debug)]
+struct RotatingRock {
+    angvel: Vec3,
+}
+
+fn rotate_rocks(mut query: Query<(&mut Transform, &RotatingRock)>, time: Res<Time>) {
+    for (mut transform, rotating_rock) in &mut query {
+        let rot = Quat::from_euler(
+            EulerRot::YZX,
+            rotating_rock.angvel.y * time.delta_seconds(),
+            rotating_rock.angvel.z * time.delta_seconds(),
+            rotating_rock.angvel.x * time.delta_seconds(),
+        );
+        transform.rotate(rot);
+    }
 }
 
 #[derive(Component, Debug)]
@@ -146,23 +164,41 @@ fn spawn_rocks(
                 Transform::from_xyz(centre_of_region.x + pos.x, centre_of_region.y + pos.y, 3.0)
                     .with_rotation(rot);
 
-            let mut velocity = Velocity::zero();
-            velocity.linvel = Vec2::new(random_range(-1.0, 1.0), random_range(-1.0, 1.0));
-            velocity.angvel = random_range(-PI, PI);
+            let velocity =
+                Velocity::linear(Vec2::new(random_range(-1.0, 1.0), random_range(-1.0, 1.0)));
 
-            commands.spawn((
-                Rock,
-                RigidBody::Dynamic,
-                Collider::cuboid(0.5, 0.5),
-                velocity,
-                Cull::default(),
-                PbrBundle {
-                    mesh: rock_appearance.mesh.clone(),
-                    material: rock_appearance.material.clone(),
+            // Spawn the visual component separately, so it can rotate in 3d
+            // without interference from rapier
+            let angvel = Vec3::new(
+                random_range(-PI, PI),
+                random_range(-PI, PI),
+                random_range(-PI, PI),
+            );
+            let rock_visuals = commands
+                .spawn((
+                    RotatingRock { angvel },
+                    PbrBundle {
+                        mesh: rock_appearance.mesh.clone(),
+                        material: rock_appearance.material.clone(),
+                        visibility: Visibility::Visible,
+                        ..Default::default()
+                    },
+                ))
+                .id();
+
+            commands
+                .spawn((
+                    Rock,
+                    RigidBody::Dynamic,
+                    Collider::ball(f32::sqrt(3.0 / 4.0)),
+                    velocity,
+                    Cull::default(),
                     transform,
-                    ..Default::default()
-                },
-            ));
+                    GlobalTransform::from(transform),
+                    Visibility::Visible,
+                    ComputedVisibility::default(),
+                ))
+                .add_child(rock_visuals);
         }
     }
 }
@@ -172,12 +208,14 @@ fn setup_rock_appearance(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let side_length = 1.0;
     let rock_mat = materials.add(Color::DARK_GRAY.into());
-    let rock_mesh = meshes.add(shape::Cube { size: 1.0 }.into());
+    let rock_mesh = meshes.add(shape::Cube { size: side_length }.into());
 
     commands.insert_resource(RockAppearance {
         mesh: rock_mesh,
         material: rock_mat,
+        side_length,
     });
 }
 
@@ -189,6 +227,7 @@ impl Plugin for RockPlugin {
             .add_event::<SpawnEvent>()
             .add_system(spawn_rocks_tick)
             .add_system(spawn_rocks)
-            .add_system(cull_far_away_rocks);
+            .add_system(cull_far_away_rocks)
+            .add_system(rotate_rocks);
     }
 }
