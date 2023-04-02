@@ -63,10 +63,12 @@ fn follow_target(
                 );
                 t = f32::min(t, smooth_follow.focus_radius / dist);
             }
-            transform.translation = Vec3::lerp(focus, transform.translation, t);
+            transform.translation =
+                Vec3::lerp(focus + smooth_follow.offset, transform.translation, t);
         } else {
-            transform.translation = focus;
+            transform.translation = focus + smooth_follow.offset;
         }
+        // info!("Camera position: {:?}", transform.translation);
     }
 }
 

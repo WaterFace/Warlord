@@ -1,40 +1,72 @@
 use bevy::{
     prelude::*,
-    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+    render::{
+        camera::ScalingMode,
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+    },
 };
 use bytemuck::pod_align_to;
 
 mod camera;
+mod parallax;
 mod physics;
 mod player;
 mod starfield_image;
 
-fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+fn setup(
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     let star_field = images.add(starfield_image::BasicStarField::default().build(Extent3d {
         width: 1024,
         height: 1024,
         ..Default::default()
     }));
 
-    commands.spawn(SpriteBundle {
-        texture: star_field,
-        transform: Transform::from_scale(Vec3::new(2.5, 2.5, 1.0)),
+    let star_field_mat = materials.add(StandardMaterial {
+        base_color_texture: Some(star_field.clone()),
+        emissive_texture: Some(star_field.clone()),
+        alpha_mode: AlphaMode::Blend,
+        ..Default::default()
+    });
+
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(
+            shape::Quad {
+                size: Vec2::new(100.0, 100.0),
+                ..Default::default()
+            }
+            .into(),
+        ),
+        material: star_field_mat,
+        ..Default::default()
+    });
+
+    // commands.spawn(SpriteBundle {
+    //     texture: star_field,
+    //     transform: Transform::from_scale(Vec3::new(2.5, 2.5, 1.0)),
+    //     ..Default::default()
+    // });
+
+    commands.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 1.0,
         ..Default::default()
     });
 
     let player = commands
         .spawn(player::PlayerBundle::default())
-        .insert(SpriteBundle {
-            texture: images.add(Image::new_fill(
-                Extent3d {
-                    width: 64,
-                    height: 64,
+        .insert(PbrBundle {
+            mesh: meshes.add(
+                shape::UVSphere {
+                    radius: 1.0,
                     ..Default::default()
-                },
-                TextureDimension::D2,
-                pod_align_to(&Color::GRAY.as_rgba_f32()).1,
-                TextureFormat::Rgba32Float,
-            )),
+                }
+                .into(),
+            ),
+            material: materials.add(Color::GRAY.into()),
             transform: Transform::from_xyz(0.0, 0.0, 1.0),
             ..Default::default()
         })
@@ -42,7 +74,13 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 
     commands
         .spawn((
-            Camera2dBundle {
+            Camera3dBundle {
+                projection: Projection::Orthographic(OrthographicProjection {
+                    scale: 10.0,
+                    scaling_mode: ScalingMode::FixedVertical(2.0),
+                    ..Default::default()
+                }),
+                transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_to(Vec3::NEG_Z, Vec3::Y),
                 ..Default::default()
             },
             camera::MainCamera,
