@@ -44,12 +44,6 @@ fn setup(
         ..Default::default()
     });
 
-    // commands.spawn(SpriteBundle {
-    //     texture: star_field,
-    //     transform: Transform::from_scale(Vec3::new(2.5, 2.5, 1.0)),
-    //     ..Default::default()
-    // });
-
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 1.0,

@@ -52,8 +52,8 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             facing: 0.0,
-            max_speed: 500.0,
-            acceleration: 800.0,
+            max_speed: 15.0,
+            acceleration: 30.0,
             rotation_speed: 180f32.to_radians(),
         }
     }
