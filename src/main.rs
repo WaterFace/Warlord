@@ -7,6 +7,7 @@ mod camera;
 mod parallax;
 mod physics;
 mod player;
+mod rock;
 mod starfield_image;
 
 fn setup(
@@ -67,7 +68,7 @@ fn setup(
         .spawn((
             Camera3dBundle {
                 projection: Projection::Orthographic(OrthographicProjection {
-                    scale: 10.0,
+                    scale: 15.0,
                     scaling_mode: ScalingMode::FixedVertical(2.0),
                     ..Default::default()
                 }),
@@ -80,6 +81,8 @@ fn setup(
             target: Some(player),
             ..Default::default()
         });
+
+    commands.spawn(rock::RockSpawner::default());
 }
 
 fn main() {
@@ -89,6 +92,7 @@ fn main() {
         .add_plugin(player::PlayerPlugin)
         .add_plugin(camera::CameraPlugin)
         .add_plugin(parallax::ParallaxPlugin)
+        .add_plugin(rock::RockPlugin)
         .insert_resource(ClearColor(Color::BLACK))
         .add_startup_system(setup)
         .run();
