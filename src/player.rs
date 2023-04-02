@@ -9,7 +9,7 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 use bytemuck::pod_align_to;
 
-use crate::camera::MainCamera;
+use crate::camera::{FocusPoint, MainCamera};
 
 #[derive(Bundle, Debug)]
 pub struct PlayerBundle {
@@ -21,6 +21,7 @@ pub struct PlayerBundle {
     pub locked_axes: LockedAxes,
     pub velocity: Velocity,
     pub external_impulse: ExternalImpulse,
+    pub focus_point: FocusPoint,
 }
 
 impl Default for PlayerBundle {
@@ -34,6 +35,7 @@ impl Default for PlayerBundle {
             locked_axes: LockedAxes::ROTATION_LOCKED,
             velocity: Velocity::default(),
             external_impulse: ExternalImpulse::default(),
+            focus_point: FocusPoint::default(),
         }
     }
 }
@@ -58,14 +60,14 @@ impl Default for Player {
 }
 
 fn rotate_player(
-    mut query: Query<(&mut Player, &GlobalTransform)>,
+    mut query: Query<(&mut Player, &mut FocusPoint, &GlobalTransform)>,
     camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     other_window_query: Query<&Window, Without<PrimaryWindow>>,
     time: Res<Time>,
 ) {
     let (main_camera, camera_transform) = camera_query.single();
-    let Ok((mut player, player_transform)) = query.get_single_mut() else {
+    let Ok((mut player, mut focus_point, player_transform)) = query.get_single_mut() else {
         info!("get_single_mut didn't find exactly 1!");
         return;
     };
@@ -87,6 +89,10 @@ fn rotate_player(
         {
             let dir = world_pos - player_transform.translation().truncate();
             desired_rotation = f32::atan2(dir.y, dir.x);
+
+            // update the focus point
+            let world_pos = Vec3::new(world_pos.x, world_pos.y, player_transform.translation().z);
+            focus_point.offset = (world_pos - player_transform.translation()) * 0.25;
         }
     }
     let diff = Vec2::angle_between(

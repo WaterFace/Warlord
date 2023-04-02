@@ -16,7 +16,7 @@ impl Default for SmoothFollow {
         Self {
             target: None,
             offset: Vec3::new(0.0, 0.0, 10.0),
-            focus_radius: 100.0,
+            focus_radius: 1.0,
             focus_centering: 0.5,
         }
     }
@@ -24,7 +24,7 @@ impl Default for SmoothFollow {
 
 #[derive(Component, Debug, Default)]
 pub struct FocusPoint {
-    pub focus: Vec3,
+    pub offset: Vec3,
 }
 
 fn follow_target(
@@ -44,7 +44,7 @@ fn follow_target(
         };
 
         let focus = if let Some(focus_point) = focus_point {
-            focus_point.focus
+            target_transform.translation + focus_point.offset
         } else {
             target_transform.translation
         };
