@@ -1,11 +1,7 @@
 use bevy::{
     prelude::*,
-    render::{
-        camera::ScalingMode,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
-    },
+    render::{camera::ScalingMode, render_resource::Extent3d},
 };
-use bytemuck::pod_align_to;
 
 mod camera;
 mod parallax;
@@ -19,30 +15,31 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let star_field = images.add(starfield_image::BasicStarField::default().build(Extent3d {
-        width: 1024,
-        height: 1024,
-        ..Default::default()
-    }));
+    let star_field = images.add(
+        starfield_image::BasicStarField {
+            density: 0.001,
+            ..Default::default()
+        }
+        .build(Extent3d {
+            width: 1024,
+            height: 1024,
+            ..Default::default()
+        }),
+    );
 
-    let star_field_mat = materials.add(StandardMaterial {
-        base_color_texture: Some(star_field.clone()),
-        emissive_texture: Some(star_field.clone()),
-        alpha_mode: AlphaMode::Blend,
-        ..Default::default()
-    });
+    commands.spawn((
+        Transform::from_xyz(0.0, 0.0, -20.0),
+        GlobalTransform::default(),
+        ComputedVisibility::default(),
+        parallax::ParallaxLayer::with_image(3, Vec2::splat(100.0), 0.9, star_field.clone()),
+    ));
 
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(
-            shape::Quad {
-                size: Vec2::new(100.0, 100.0),
-                ..Default::default()
-            }
-            .into(),
-        ),
-        material: star_field_mat,
-        ..Default::default()
-    });
+    commands.spawn((
+        Transform::from_xyz(0.0, 0.0, -30.0),
+        GlobalTransform::default(),
+        ComputedVisibility::default(),
+        parallax::ParallaxLayer::with_image(3, Vec2::splat(70.0), 0.99, star_field.clone()),
+    ));
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
@@ -91,6 +88,7 @@ fn main() {
         .add_plugin(physics::PhysicsPlugin::default())
         .add_plugin(player::PlayerPlugin)
         .add_plugin(camera::CameraPlugin)
+        .add_plugin(parallax::ParallaxPlugin)
         .insert_resource(ClearColor(Color::BLACK))
         .add_startup_system(setup)
         .run();
