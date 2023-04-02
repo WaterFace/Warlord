@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 use bevy::utils::Duration;
-use bevy_rapier2d::prelude::{Collider, RigidBody};
+use bevy_rapier2d::prelude::{Collider, RigidBody, Velocity};
 use rand::distributions::uniform::SampleUniform;
 use rand::Rng;
 
@@ -146,10 +146,15 @@ fn spawn_rocks(
                 Transform::from_xyz(centre_of_region.x + pos.x, centre_of_region.y + pos.y, 3.0)
                     .with_rotation(rot);
 
+            let mut velocity = Velocity::zero();
+            velocity.linvel = Vec2::new(random_range(-1.0, 1.0), random_range(-1.0, 1.0));
+            velocity.angvel = random_range(-PI, PI);
+
             commands.spawn((
                 Rock,
                 RigidBody::Dynamic,
                 Collider::cuboid(0.5, 0.5),
+                velocity,
                 Cull::default(),
                 PbrBundle {
                     mesh: rock_appearance.mesh.clone(),
