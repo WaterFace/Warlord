@@ -9,7 +9,10 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 use bytemuck::pod_align_to;
 
-use crate::camera::{FocusPoint, MainCamera};
+use crate::{
+    camera::{FocusPoint, MainCamera},
+    weapon::MainGun,
+};
 
 #[derive(Bundle, Debug)]
 pub struct PlayerBundle {
@@ -22,6 +25,7 @@ pub struct PlayerBundle {
     pub velocity: Velocity,
     pub external_impulse: ExternalImpulse,
     pub focus_point: FocusPoint,
+    pub main_gun: MainGun,
 }
 
 impl Default for PlayerBundle {
@@ -36,6 +40,7 @@ impl Default for PlayerBundle {
             velocity: Velocity::default(),
             external_impulse: ExternalImpulse::default(),
             focus_point: FocusPoint::default(),
+            main_gun: MainGun::default(),
         }
     }
 }

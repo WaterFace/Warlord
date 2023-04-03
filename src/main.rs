@@ -9,6 +9,7 @@ mod physics;
 mod player;
 mod rock;
 mod starfield_image;
+mod weapon;
 
 fn setup(
     mut commands: Commands,
@@ -88,11 +89,12 @@ fn setup(
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(physics::PhysicsPlugin::default())
+        .add_plugin(physics::PhysicsPlugin { debug: false })
         .add_plugin(player::PlayerPlugin)
         .add_plugin(camera::CameraPlugin)
         .add_plugin(parallax::ParallaxPlugin)
         .add_plugin(rock::RockPlugin)
+        .add_plugin(weapon::WeaponPlugin)
         .insert_resource(ClearColor(Color::BLACK))
         .add_startup_system(setup)
         .run();
