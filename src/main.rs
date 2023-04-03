@@ -1,5 +1,6 @@
 use bevy::{
     core_pipeline::bloom::BloomSettings,
+    log::{Level, LogPlugin},
     prelude::*,
     render::{camera::ScalingMode, render_resource::Extent3d},
 };
@@ -95,9 +96,15 @@ fn setup(
 }
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(physics::PhysicsPlugin { debug: false })
+    let mut app = App::new();
+    #[cfg(not(debug_assertions))]
+    app.add_plugins(DefaultPlugins);
+    #[cfg(debug_assertions)]
+    app.add_plugins(DefaultPlugins.set(LogPlugin {
+        filter: "error,warlord=debug".into(),
+        level: Level::DEBUG,
+    }));
+    app.add_plugin(physics::PhysicsPlugin { debug: false })
         .add_plugin(player::PlayerPlugin)
         .add_plugin(camera::CameraPlugin)
         .add_plugin(parallax::ParallaxPlugin)
