@@ -14,8 +14,8 @@ pub struct Rock;
 #[derive(Component, Debug)]
 pub struct RockSpawner {
     /// The number of rocks in a cluster is drawn randomly from this range
-    pub min_cluster_size: usize,
-    pub max_cluster_size: usize,
+    pub min_cluster_size: u32,
+    pub max_cluster_size: u32,
     /// Clusters of rocks will spawn within this range of the main camera
     pub min_spawn_distance: f32,
     pub max_spawn_distance: f32,
@@ -42,7 +42,7 @@ struct RockAppearance {
 }
 
 struct SpawnEvent {
-    number_of_rocks: usize,
+    number_of_rocks: u32,
     centre_of_region: Vec2,
 }
 
@@ -63,6 +63,21 @@ fn rotate_rocks(mut query: Query<(&mut Transform, &RotatingRock)>, time: Res<Tim
     }
 }
 
+#[derive(Resource, Debug)]
+struct RockLimit {
+    current: u32,
+    limit: u32,
+}
+
+impl Default for RockLimit {
+    fn default() -> Self {
+        Self {
+            current: 0,
+            limit: 300,
+        }
+    }
+}
+
 #[derive(Component, Debug)]
 struct Cull {
     max_distance: f32,
@@ -78,6 +93,7 @@ fn cull_far_away_rocks(
     mut commands: Commands,
     query: Query<(Entity, &Cull, &GlobalTransform), Without<MainCamera>>,
     camera_query: Query<&GlobalTransform, With<MainCamera>>,
+    mut rock_limit: ResMut<RockLimit>,
 ) {
     let main_camera = camera_query.single();
     for (e, cull, transform) in &query {
@@ -87,7 +103,8 @@ fn cull_far_away_rocks(
         );
         if dist2 > cull.max_distance * cull.max_distance {
             commands.entity(e).despawn_recursive();
-            info!("Despawned rock {e:?}");
+            rock_limit.current -= 1;
+            debug!("Despawned rock {e:?}");
         }
     }
 }
@@ -133,13 +150,20 @@ fn spawn_rocks(
     mut commands: Commands,
     mut reader: EventReader<SpawnEvent>,
     rock_appearance: Res<RockAppearance>,
+    mut rock_limit: ResMut<RockLimit>,
 ) {
     for SpawnEvent {
         number_of_rocks,
         centre_of_region,
     } in reader.iter()
     {
-        info!("Trying to spawn a cluster of rocks at {centre_of_region:?} with {number_of_rocks} rocks.");
+        debug!("Trying to spawn a cluster of rocks at {centre_of_region:?} with {number_of_rocks} rocks.");
+        if number_of_rocks + rock_limit.current > rock_limit.limit {
+            debug!("Couldn't spawn {} rocks. There are currently {} rocks and that would exceed the limit of {}", number_of_rocks, rock_limit.current, rock_limit.limit);
+            return;
+        } else {
+            rock_limit.current += number_of_rocks;
+        }
         for _ in 0..*number_of_rocks {
             // Rocks are 1x1 cubes, so the total area of the rocks to be spawned is about
             // `number_of_rocks`. A circle of that area has the following radius.
@@ -221,7 +245,8 @@ pub struct RockPlugin;
 
 impl Plugin for RockPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_rock_appearance)
+        app.insert_resource(RockLimit::default()) // TODO: make the limit configurable from outside the plugin
+            .add_startup_system(setup_rock_appearance)
             .add_event::<SpawnEvent>()
             .add_system(spawn_rocks_tick)
             .add_system(spawn_rocks)
