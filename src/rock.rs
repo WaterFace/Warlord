@@ -39,7 +39,6 @@ impl Default for RockSpawner {
 struct RockAppearance {
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
-    side_length: f32,
 }
 
 struct SpawnEvent {
@@ -215,7 +214,6 @@ fn setup_rock_appearance(
     commands.insert_resource(RockAppearance {
         mesh: rock_mesh,
         material: rock_mat,
-        side_length,
     });
 }
 
