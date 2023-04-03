@@ -1,4 +1,5 @@
 use bevy::{
+    core_pipeline::bloom::BloomSettings,
     prelude::*,
     render::{camera::ScalingMode, render_resource::Extent3d},
 };
@@ -74,6 +75,13 @@ fn setup(
                     ..Default::default()
                 }),
                 transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_to(Vec3::NEG_Z, Vec3::Y),
+                camera: Camera {
+                    hdr: true,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            BloomSettings {
                 ..Default::default()
             },
             camera::MainCamera,
