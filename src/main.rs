@@ -1,19 +1,15 @@
 use bevy::{
-    core_pipeline::{bloom::BloomSettings, clear_color::ClearColorConfig},
     log::{Level, LogPlugin},
     prelude::*,
-    render::{camera::ScalingMode, render_resource::Extent3d},
 };
 use camera::{MainCameraBundle, SmoothFollow};
 use starfield_shader::{StarfieldBundle, StarfieldCameraBundle, StarfieldMaterial};
 
 mod camera;
 mod heat;
-mod parallax;
 mod physics;
 mod player;
 mod rock;
-mod starfield_image;
 mod starfield_shader;
 mod ui;
 mod weapon;
@@ -143,7 +139,6 @@ fn main() {
         .add_plugin(starfield_shader::StarfieldShaderPlugin)
         .add_plugin(player::PlayerPlugin)
         .add_plugin(camera::CameraPlugin)
-        .add_plugin(parallax::ParallaxPlugin)
         .add_plugin(rock::RockPlugin)
         .add_plugin(weapon::WeaponPlugin)
         .add_plugin(heat::HeatPlugin)
