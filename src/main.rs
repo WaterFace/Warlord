@@ -1,5 +1,5 @@
 use bevy::{
-    core_pipeline::bloom::BloomSettings,
+    core_pipeline::{bloom::BloomSettings, clear_color::ClearColorConfig},
     log::{Level, LogPlugin},
     prelude::*,
     render::{camera::ScalingMode, render_resource::Extent3d},
@@ -12,6 +12,7 @@ mod physics;
 mod player;
 mod rock;
 mod starfield_image;
+mod ui;
 mod weapon;
 
 fn setup(
@@ -81,6 +82,10 @@ fn setup(
                     hdr: true,
                     ..Default::default()
                 },
+                camera_3d: Camera3d {
+                    clear_color: ClearColorConfig::Custom(Color::BLACK),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             BloomSettings {
@@ -112,6 +117,7 @@ fn main() {
         .add_plugin(rock::RockPlugin)
         .add_plugin(weapon::WeaponPlugin)
         .add_plugin(heat::HeatPlugin)
+        .add_plugin(ui::UIPlugin)
         .add_startup_system(setup)
         .run();
 }
