@@ -6,6 +6,7 @@ use bevy::{
 };
 
 mod camera;
+mod heat;
 mod parallax;
 mod physics;
 mod player;
@@ -110,7 +111,7 @@ fn main() {
         .add_plugin(parallax::ParallaxPlugin)
         .add_plugin(rock::RockPlugin)
         .add_plugin(weapon::WeaponPlugin)
-        .insert_resource(ClearColor(Color::BLACK))
+        .add_plugin(heat::HeatPlugin)
         .add_startup_system(setup)
         .run();
 }

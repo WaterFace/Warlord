@@ -11,6 +11,7 @@ use bytemuck::pod_align_to;
 
 use crate::{
     camera::{FocusPoint, MainCamera},
+    heat::Heat,
     weapon::MainGun,
 };
 
@@ -26,6 +27,7 @@ pub struct PlayerBundle {
     pub external_impulse: ExternalImpulse,
     pub focus_point: FocusPoint,
     pub main_gun: MainGun,
+    pub heat: Heat,
 }
 
 impl Default for PlayerBundle {
@@ -41,6 +43,7 @@ impl Default for PlayerBundle {
             external_impulse: ExternalImpulse::default(),
             focus_point: FocusPoint::default(),
             main_gun: MainGun::default(),
+            heat: Heat::default(),
         }
     }
 }

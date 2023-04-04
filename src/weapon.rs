@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Duration};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::player::Player;
+use crate::{heat::Heat, player::Player};
 
 #[derive(Component, Debug)]
 pub struct MainGun {
@@ -87,19 +87,21 @@ fn fire_main_gun(
     mut player_query: Query<(
         &Player,
         &mut MainGun,
+        &mut Heat,
         &GlobalTransform,
         &mut ExternalImpulse,
     )>,
     input: Res<Input<MouseButton>>,
     slug_visuals: Res<SlugVisuals>,
 ) {
-    for (player, mut main_gun, transform, mut ext_impulse) in &mut player_query {
+    for (player, mut main_gun, mut heat, transform, mut ext_impulse) in &mut player_query {
         if !input.pressed(MouseButton::Left) {
             return;
         }
         if !main_gun.delay_timer.finished() {
             return;
         }
+        // TODO: prevent firing if we're overheated
 
         let facing_dir = Vec2::from_angle(player.facing);
         let pos = transform.translation().truncate() + facing_dir * main_gun.origin_distance;
@@ -134,6 +136,8 @@ fn fire_main_gun(
         ));
 
         ext_impulse.impulse += -facing_dir * main_gun.recoil;
+
+        heat.add(8.0);
 
         let delay = Duration::from_secs_f32(main_gun.fire_delay);
         main_gun.delay_timer.reset();
