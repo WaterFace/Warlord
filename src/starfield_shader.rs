@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
     reflect::TypeUuid,
     render::{
-        camera::{self, CameraOutputMode, CameraRenderGraph, ScalingMode},
+        camera::{CameraOutputMode, CameraRenderGraph, ScalingMode},
         render_resource::{
             AsBindGroup, AsBindGroupShaderType, BlendState, LoadOp, ShaderRef, ShaderType,
         },
