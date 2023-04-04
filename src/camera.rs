@@ -1,7 +1,60 @@
-use bevy::prelude::*;
+use bevy::{
+    core_pipeline::{bloom::BloomSettings, clear_color::ClearColorConfig},
+    prelude::*,
+    render::camera::{CameraRenderGraph, ScalingMode},
+};
 
 #[derive(Component, Debug, Default)]
 pub struct MainCamera;
+
+#[derive(Bundle)]
+pub struct MainCameraBundle {
+    pub camera: Camera,
+    pub camera_render_graph: bevy::render::camera::CameraRenderGraph,
+    pub projection: Projection,
+    pub visible_entities: bevy::render::view::VisibleEntities,
+    pub frustum: bevy::render::primitives::Frustum,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    pub camera_3d: Camera3d,
+    pub tonemapping: bevy::core_pipeline::tonemapping::Tonemapping,
+    pub dither: bevy::core_pipeline::tonemapping::DebandDither,
+    pub color_grading: bevy::render::view::ColorGrading,
+    pub bloom_settings: BloomSettings,
+    pub smooth_follow: SmoothFollow,
+    pub main_camera: MainCamera,
+}
+
+impl Default for MainCameraBundle {
+    fn default() -> Self {
+        Self {
+            camera: Camera {
+                hdr: true,
+                ..Default::default()
+            },
+            camera_render_graph: CameraRenderGraph::new(bevy::core_pipeline::core_3d::graph::NAME),
+            projection: Projection::Orthographic(OrthographicProjection {
+                scale: 15.0,
+                scaling_mode: ScalingMode::FixedVertical(2.0),
+                ..Default::default()
+            }),
+            visible_entities: Default::default(),
+            frustum: Default::default(),
+            transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_to(Vec3::NEG_Z, Vec3::Y),
+            global_transform: Default::default(),
+            camera_3d: Camera3d {
+                clear_color: ClearColorConfig::Custom(Color::BLACK),
+                ..Default::default()
+            },
+            tonemapping: Default::default(),
+            dither: Default::default(),
+            color_grading: Default::default(),
+            bloom_settings: Default::default(),
+            smooth_follow: Default::default(),
+            main_camera: Default::default(),
+        }
+    }
+}
 
 #[derive(Component, Debug)]
 pub struct SmoothFollow {

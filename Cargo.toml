@@ -9,6 +9,7 @@ edition = "2021"
 bevy = { version = "0.10.1" }
 bevy_rapier2d = "0.21.0"
 bytemuck = "1.13.1"
+noisy_bevy = "0.3.0"
 rand = "0.8.5"
 
 # Enable a small amount of optimization in debug mode

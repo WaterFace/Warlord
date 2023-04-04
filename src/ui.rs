@@ -22,7 +22,7 @@ fn setup_ui_camera(mut commands: Commands) {
                 clear_color: ClearColorConfig::None,
             },
             camera: Camera {
-                order: 1, // Main camera has order 0 by default, order 1 renders after (on top) of that
+                order: 2, // Main camera has order 0 by default, higher orders render after (on top) of that
                 output_mode: CameraOutputMode::Write {
                     // Gotta do this stuff to not clear the previous camera's work
                     blend_state: Some(BlendState::ALPHA_BLENDING),
