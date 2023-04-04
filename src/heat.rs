@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 
 #[derive(Component, Debug)]
+#[allow(dead_code)]
 pub struct Heat {
     current: f32,
     limit: f32,
@@ -11,6 +12,7 @@ pub struct Heat {
     decay_timer: Timer,
 }
 
+#[allow(dead_code)]
 impl Heat {
     pub fn current(&self) -> f32 {
         self.current
