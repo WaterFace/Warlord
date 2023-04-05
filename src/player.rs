@@ -1,13 +1,11 @@
+use std::f32::consts::PI;
+
 use bevy::{
     prelude::*,
-    render::{
-        camera::RenderTarget,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
-    },
+    render::camera::RenderTarget,
     window::{PrimaryWindow, WindowRef},
 };
 use bevy_rapier2d::prelude::*;
-use bytemuck::pod_align_to;
 
 use crate::{
     camera::{FocusPoint, MainCamera},
@@ -28,6 +26,8 @@ pub struct PlayerBundle {
     pub focus_point: FocusPoint,
     pub main_gun: MainGun,
     pub heat: Heat,
+    pub visibility: Visibility,
+    pub computed_visibility: ComputedVisibility,
 }
 
 impl Default for PlayerBundle {
@@ -44,6 +44,8 @@ impl Default for PlayerBundle {
             focus_point: FocusPoint::default(),
             main_gun: MainGun::default(),
             heat: Heat::default(),
+            visibility: Visibility::Visible,
+            computed_visibility: ComputedVisibility::default(),
         }
     }
 }
@@ -149,51 +151,163 @@ fn move_player(
     }
 }
 
-#[derive(Component)]
-struct DebugThingy;
+#[derive(Component, Debug)]
+struct PlayerModel {
+    pub base_angvel: Vec3,
+    pub current_angvel: Vec3,
+}
 
-#[allow(dead_code)]
-fn debug_facing(
+impl Default for PlayerModel {
+    fn default() -> Self {
+        Self {
+            base_angvel: Vec3::new(3.5, 2.3, 1.2),
+            current_angvel: Vec3::new(3.5, 2.3, 1.2),
+        }
+    }
+}
+
+#[derive(Resource, Debug, Default)]
+struct PlayerModelHandles {
+    pub body_mesh: Handle<Mesh>,
+    pub body_mat: Handle<StandardMaterial>,
+
+    pub light_mesh: Handle<Mesh>,
+    pub light_mat: Handle<StandardMaterial>,
+}
+
+fn setup_player_model_handles(
     mut commands: Commands,
-    query: Query<(&Player, &GlobalTransform)>,
-    mut debug_marker_query: Query<&mut Transform, With<DebugThingy>>,
-    mut images: ResMut<Assets<Image>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let Ok(mut debug_marker_transform) = debug_marker_query.get_single_mut()  else {
-        info!("debug marker not found. Creating one for next frame...");
-        commands.spawn(SpriteBundle {
-            texture: images.add(Image::new_fill(
-                Extent3d {
-                    width: 16,
-                    height: 16,
+    let body_mat = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.2, 0.2, 0.2),
+        metallic: 0.99,
+        perceptual_roughness: 0.2,
+        ..Default::default()
+    });
+    let body_mesh = meshes.add(
+        shape::UVSphere {
+            radius: 1.0,
+            ..Default::default()
+        }
+        .into(),
+    );
+
+    let light_mesh = meshes.add(
+        shape::UVSphere {
+            radius: 0.1,
+            sectors: 12,
+            stacks: 8,
+        }
+        .into(),
+    );
+    let light_mat = materials.add(StandardMaterial {
+        base_color: Color::RED,
+        ..Default::default()
+    });
+
+    commands.insert_resource(PlayerModelHandles {
+        body_mat,
+        body_mesh,
+        light_mat,
+        light_mesh,
+    });
+}
+
+#[derive(Component, Debug, Default)]
+struct PlayerModelLight;
+
+fn setup_player_model(
+    mut commands: Commands,
+    query: Query<Entity, Added<Player>>,
+    handles: Res<PlayerModelHandles>,
+) {
+    let Ok(player) = query.get_single() else { return; };
+    debug!("Player component added to entity {player:?}");
+
+    debug!("Adding base model to player");
+    commands.entity(player).with_children(|parent| {
+        parent
+            .spawn((
+                PbrBundle {
+                    mesh: handles.body_mesh.clone(),
+                    material: handles.body_mat.clone(),
                     ..Default::default()
                 },
-                TextureDimension::D2,
-                pod_align_to(&Color::RED.as_rgba_f32()).1,
-                TextureFormat::Rgba32Float,
-            )),
-            ..Default::default()
-        }).insert(DebugThingy);
-        return;
-    };
+                PlayerModel::default(),
+            ))
+            .with_children(|parent| {
+                const NUM_LIGHTS: u32 = 50;
+                let phi: f32 = PI * (f32::sqrt(5.0) - 1.0);
 
-    if let Ok((player, player_transform)) = query.get_single() {
-        let dir = Vec3::new(
-            f32::cos(player.facing),
-            f32::sin(player.facing),
-            player_transform.translation().z,
+                for i in 0..NUM_LIGHTS {
+                    let y = 1.0 - (i as f32 / (NUM_LIGHTS - 1) as f32) * 2.0;
+                    let radius = f32::sqrt(1.0 - y * y);
+
+                    let theta = phi * i as f32;
+
+                    let x = f32::cos(theta) * radius;
+                    let z = f32::sin(theta) * radius;
+
+                    debug!("Adding light to player base model");
+                    parent.spawn((
+                        PbrBundle {
+                            mesh: handles.light_mesh.clone(),
+                            material: handles.light_mat.clone(),
+                            transform: Transform::from_xyz(x, y, z),
+                            ..Default::default()
+                        },
+                        PlayerModelLight,
+                    ));
+                }
+            });
+    });
+}
+
+fn rotate_player_model(mut query: Query<(&PlayerModel, &mut Transform)>, time: Res<Time>) {
+    for (player_model, mut transform) in &mut query {
+        let rot = Quat::from_euler(
+            EulerRot::YZX,
+            player_model.current_angvel.y * time.delta_seconds(),
+            player_model.current_angvel.z * time.delta_seconds(),
+            player_model.current_angvel.x * time.delta_seconds(),
         );
-        debug_marker_transform.translation = player_transform.translation() + dir * 100.0;
-    } else {
-        info!("get_single didn't find exactly 1!")
+
+        transform.rotate(rot);
     }
+}
+
+fn player_model_heat_effect(
+    heat_query: Query<&Heat, Without<PlayerModel>>,
+    mut model_query: Query<&mut PlayerModel>,
+    handles: Res<PlayerModelHandles>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let Ok(heat) = heat_query.get_single() else { return; };
+    let Ok(mut player_model) = model_query.get_single_mut() else { return; };
+
+    const BASE_COLOR: Color = Color::GRAY;
+    const HOT_COLOR: Color = Color::rgb(15.0, 5.0, 1.0);
+
+    const ROTATION_FACTOR: f32 = 5.0;
+
+    let Some(mut light_mat) = materials.get_mut(&handles.light_mat) else { return; };
+    let t = heat.fraction();
+
+    light_mat.base_color = BASE_COLOR * (1.0 - t) + HOT_COLOR * t;
+
+    player_model.current_angvel = player_model.base_angvel * (1.0 + t * ROTATION_FACTOR);
 }
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems((rotate_player, player_friction, move_player).chain());
-        app.add_system(debug_facing);
+        app.add_startup_system(setup_player_model_handles)
+            .add_systems((rotate_player, player_friction, move_player).chain())
+            .add_system(setup_player_model)
+            .add_system(rotate_player_model)
+            .add_system(player_model_heat_effect);
     }
 }
