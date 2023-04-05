@@ -25,15 +25,14 @@ impl Heat {
     }
     pub fn add(&mut self, heat: f32) {
         self.current = (self.current + heat).clamp(0.0, self.limit);
-        if heat > 0.0 {
-            self.decay_timer.reset();
-        }
+        self.decay_timer.reset();
     }
     pub fn tick(&mut self, dt: f32) {
         let leftover = dt - self.decay_timer.remaining_secs();
         self.decay_timer.tick(Duration::from_secs_f32(dt));
         if leftover > 0.0 && self.decay_timer.finished() {
-            self.add(-self.decay_rate * leftover);
+            self.current -= self.decay_rate * leftover;
+            self.current = self.current.clamp(0.0, self.limit);
         }
     }
 }
