@@ -45,8 +45,8 @@ fn setup_slug(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let material = materials.add(StandardMaterial {
-        base_color: Color::ORANGE_RED,
-        emissive: Color::WHITE,
+        base_color: Color::WHITE,
+        emissive: Color::rgb(5.0, 5.0, 5.0),
         ..Default::default()
     });
     let mesh = meshes.add(

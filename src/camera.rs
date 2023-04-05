@@ -1,5 +1,7 @@
 use bevy::{
-    core_pipeline::{bloom::BloomSettings, clear_color::ClearColorConfig},
+    core_pipeline::{
+        bloom::BloomSettings, clear_color::ClearColorConfig, tonemapping::Tonemapping,
+    },
     prelude::*,
     render::camera::{CameraRenderGraph, ScalingMode},
 };
@@ -30,6 +32,7 @@ impl Default for MainCameraBundle {
         Self {
             camera: Camera {
                 hdr: true,
+
                 ..Default::default()
             },
             camera_render_graph: CameraRenderGraph::new(bevy::core_pipeline::core_3d::graph::NAME),
@@ -46,10 +49,10 @@ impl Default for MainCameraBundle {
                 clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..Default::default()
             },
-            tonemapping: Default::default(),
+            tonemapping: Tonemapping::AcesFitted,
             dither: Default::default(),
             color_grading: Default::default(),
-            bloom_settings: Default::default(),
+            bloom_settings: BloomSettings::default(),
             smooth_follow: Default::default(),
             main_camera: Default::default(),
         }
