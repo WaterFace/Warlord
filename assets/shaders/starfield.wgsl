@@ -45,21 +45,35 @@ fn fragment(
 
     // let brightness = 0.3;
 
+    let seed = 
+        material.scale 
+        * material.ramp_cutoff 
+        * f32(material.octaves)
+        * material.lacunarity 
+        * material.gain 
+        * material.brightness_scale 
+        * f32(material.brightness_octaves)
+        * material.brightness_lacunarity 
+        * material.brightness_gain 
+        * material.brightness;
+
     let white = vec4(1.0, 1.0, 1.0, 1.0);
     let black = vec4(0.0, 0.0, 0.0, 0.0);
-    let noise = fbm_simplex_2d(
-        uv * material.scale + material.camera_position, 
+    let noise = fbm_simplex_2d_seeded(
+        uv * material.scale + material.camera_position * vec2(1.0, -1.0) * material.parallax_factor, 
         material.octaves, 
         material.lacunarity, 
-        material.gain);
+        material.gain,
+        seed);
 
     let t = max((noise - material.ramp_cutoff) / (1.0 - material.ramp_cutoff), 0.0);
 
-    let noise2 = fbm_simplex_2d(
-        uv * material.brightness_scale, 
+    let noise2 = fbm_simplex_2d_seeded(
+        uv * material.brightness_scale + material.camera_position * vec2(1.0, -1.0) * material.parallax_factor, 
         material.brightness_octaves, 
         material.brightness_lacunarity, 
-        material.brightness_gain);
+        material.brightness_gain,
+        seed);
 
     let c2 = noise2 * white + (1.0 - noise2) * black;
     let c = t * white + (1.0-t) * black;
