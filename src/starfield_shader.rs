@@ -1,5 +1,7 @@
 use bevy::{
-    core_pipeline::{clear_color::ClearColorConfig, core_3d::Camera3dDepthLoadOp},
+    core_pipeline::{
+        bloom::BloomSettings, clear_color::ClearColorConfig, core_3d::Camera3dDepthLoadOp,
+    },
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -14,8 +16,12 @@ use noisy_bevy::NoisyShaderPlugin;
 
 use crate::camera::MainCamera;
 
+#[derive(Component, Debug, Default)]
+pub struct StarfieldMesh;
+
 #[derive(Bundle)]
 pub struct StarfieldBundle {
+    pub starfield_mesh: StarfieldMesh,
     pub mesh: Handle<Mesh>,
     pub material: Handle<StarfieldMaterial>,
     pub transform: Transform,
@@ -28,6 +34,7 @@ pub struct StarfieldBundle {
 impl Default for StarfieldBundle {
     fn default() -> Self {
         Self {
+            starfield_mesh: StarfieldMesh,
             mesh: Handle::default(),
             material: Handle::default(),
             transform: Transform::default(),
@@ -39,8 +46,12 @@ impl Default for StarfieldBundle {
     }
 }
 
+#[derive(Component, Debug)]
+pub struct StarfieldCamera;
+
 #[derive(Bundle)]
 pub struct StarfieldCameraBundle {
+    pub starfield_camera: StarfieldCamera,
     pub camera: Camera,
     pub camera_render_graph: bevy::render::camera::CameraRenderGraph,
     pub projection: Projection,
@@ -53,11 +64,13 @@ pub struct StarfieldCameraBundle {
     pub dither: bevy::core_pipeline::tonemapping::DebandDither,
     pub color_grading: bevy::render::view::ColorGrading,
     pub render_layers: RenderLayers,
+    pub bloom_settings: BloomSettings,
 }
 
 impl Default for StarfieldCameraBundle {
     fn default() -> Self {
         Self {
+            starfield_camera: StarfieldCamera,
             camera: Camera {
                 hdr: true,
                 output_mode: CameraOutputMode::Write {
@@ -86,6 +99,7 @@ impl Default for StarfieldCameraBundle {
             dither: Default::default(),
             color_grading: Default::default(),
             render_layers: RenderLayers::layer(3),
+            bloom_settings: BloomSettings::default(),
         }
     }
 }
@@ -174,12 +188,30 @@ impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
 }
 
 fn update_starfield(
-    camera_query: Query<&GlobalTransform, (With<MainCamera>, Without<Handle<StarfieldMaterial>>)>,
+    main_camera_query: Query<
+        &GlobalTransform,
+        (With<MainCamera>, Without<Handle<StarfieldMaterial>>),
+    >,
     mut starfields: ResMut<Assets<StarfieldMaterial>>,
 ) {
-    let main_camera = camera_query.single();
+    let main_camera = main_camera_query.single();
     for mut starfield in starfields.iter_mut() {
         starfield.1.camera_position = main_camera.translation().truncate();
+    }
+}
+
+fn update_starfield_scale(
+    camera_query: Query<&Projection, (With<StarfieldCamera>, Changed<Projection>)>,
+    mut starfield_query: Query<&mut Transform, With<StarfieldMesh>>,
+) {
+    let Ok(proj) = camera_query.get_single() else { return; };
+
+    for mut starfield in &mut starfield_query {
+        let Projection::Orthographic(proj) = proj else { return };
+        let Rect { min, max } = proj.area;
+        let size = Vec2::abs(max - min);
+        debug!("Resized starfield to {:?}", size);
+        starfield.scale = Vec3::new(size.x, size.y, 1.0);
     }
 }
 
@@ -189,6 +221,7 @@ impl Plugin for StarfieldShaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(NoisyShaderPlugin)
             .add_plugin(MaterialPlugin::<StarfieldMaterial>::default())
-            .add_system(update_starfield);
+            .add_system(update_starfield)
+            .add_system(update_starfield_scale);
     }
 }
