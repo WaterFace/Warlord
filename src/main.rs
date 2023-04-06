@@ -35,6 +35,8 @@ fn setup(
 
         parallax_factor: 0.25,
         camera_position: Vec2::ZERO,
+
+        resolution: Vec2::ZERO,
     });
 
     commands.spawn(StarfieldBundle {

@@ -20,6 +20,7 @@ struct StarfieldMaterial {
     // parallax parameters
     parallax_factor: f32,
     camera_position: vec2<f32>,
+    resolution: vec2<f32>,
 };
 
 @group(1) @binding(0)

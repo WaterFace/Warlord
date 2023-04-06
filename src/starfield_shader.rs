@@ -127,6 +127,8 @@ pub struct StarfieldMaterial {
     // Parallax parameters
     pub parallax_factor: f32,
     pub camera_position: Vec2,
+
+    pub resolution: Vec2,
 }
 
 impl Material for StarfieldMaterial {
@@ -160,6 +162,8 @@ struct StarfieldMaterialUniform {
     // parallax parameters
     pub parallax_factor: f32,
     pub camera_position: Vec2,
+
+    pub resolution: Vec2,
 }
 
 impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
@@ -183,6 +187,7 @@ impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
 
             parallax_factor: self.parallax_factor,
             camera_position: self.camera_position,
+            resolution: self.resolution,
         }
     }
 }
@@ -192,24 +197,22 @@ fn update_starfield(
         &GlobalTransform,
         (With<MainCamera>, Without<Handle<StarfieldMaterial>>),
     >,
+    starfield_camera_query: Query<&Projection, (With<StarfieldCamera>, Changed<Projection>)>,
+    mut starfield_query: Query<&mut Transform, With<StarfieldMesh>>,
     mut starfields: ResMut<Assets<StarfieldMaterial>>,
 ) {
+    let Ok(proj) = starfield_camera_query.get_single() else { return; };
+    let Projection::Orthographic(proj) = proj else { return };
+    let Rect { min, max } = proj.area;
+    let size = Vec2::abs(max - min);
+
     let main_camera = main_camera_query.single();
     for mut starfield in starfields.iter_mut() {
         starfield.1.camera_position = main_camera.translation().truncate();
+        starfield.1.resolution = size;
     }
-}
-
-fn update_starfield_scale(
-    camera_query: Query<&Projection, (With<StarfieldCamera>, Changed<Projection>)>,
-    mut starfield_query: Query<&mut Transform, With<StarfieldMesh>>,
-) {
-    let Ok(proj) = camera_query.get_single() else { return; };
 
     for mut starfield in &mut starfield_query {
-        let Projection::Orthographic(proj) = proj else { return };
-        let Rect { min, max } = proj.area;
-        let size = Vec2::abs(max - min);
         debug!("Resized starfield to {:?}", size);
         starfield.scale = Vec3::new(size.x, size.y, 1.0);
     }
@@ -221,7 +224,6 @@ impl Plugin for StarfieldShaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(NoisyShaderPlugin)
             .add_plugin(MaterialPlugin::<StarfieldMaterial>::default())
-            .add_system(update_starfield)
-            .add_system(update_starfield_scale);
+            .add_system(update_starfield);
     }
 }
