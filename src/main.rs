@@ -6,6 +6,7 @@ use camera::{MainCameraBundle, SmoothFollow};
 use starfield_shader::{StarfieldBundle, StarfieldCameraBundle, StarfieldMaterial};
 
 mod camera;
+mod collectible;
 mod heat;
 mod physics;
 mod player;
