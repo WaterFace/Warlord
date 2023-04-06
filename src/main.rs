@@ -20,7 +20,7 @@ fn setup(
     mut starfields: ResMut<Assets<StarfieldMaterial>>,
 ) {
     let distant_stars = starfields.add(StarfieldMaterial {
-        scale: 150.0,
+        scale: 50.0,
         ramp_cutoff: 0.85,
         octaves: 1,
         lacunarity: 1.0,
