@@ -378,6 +378,7 @@ dependencies = [
  "bevy_tasks",
  "bevy_utils",
  "bytemuck",
+ "serde",
 ]
 
 [[package]]
@@ -536,6 +537,7 @@ dependencies = [
  "bevy_math",
  "bevy_reflect",
  "bevy_utils",
+ "serde",
  "thiserror",
 ]
 
@@ -621,6 +623,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39106bc2ee21fce9496d2e15e0ba7925dff63e3eae10f7c1fc0094b56ad9f2bb"
 dependencies = [
  "glam",
+]
+
+[[package]]
+name = "bevy_particle_systems"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49a2dd7362522d3f0b61bb72ca96c6ba9902ce46be61aa4ad62a2909f9fa3670"
+dependencies = [
+ "bevy_app",
+ "bevy_asset",
+ "bevy_ecs",
+ "bevy_hierarchy",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_sprite",
+ "bevy_time",
+ "bevy_transform",
+ "rand",
 ]
 
 [[package]]
@@ -852,6 +873,7 @@ dependencies = [
  "bevy_reflect",
  "bevy_utils",
  "crossbeam-channel",
+ "serde",
  "thiserror",
 ]
 
@@ -866,6 +888,7 @@ dependencies = [
  "bevy_hierarchy",
  "bevy_math",
  "bevy_reflect",
+ "serde",
 ]
 
 [[package]]
@@ -939,6 +962,7 @@ dependencies = [
  "bevy_reflect",
  "bevy_utils",
  "raw-window-handle",
+ "serde",
 ]
 
 [[package]]
@@ -1358,6 +1382,17 @@ name = "dasp_sample"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
+
+[[package]]
+name = "derive_more"
+version = "0.99.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "dispatch"
@@ -1839,6 +1874,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1947,6 +1991,34 @@ name = "lazycell"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
+
+[[package]]
+name = "leafwing-input-manager"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cff07db1736e8796568bfd58c789714d4a36827ab68ffae477b092532bd907e7"
+dependencies = [
+ "bevy",
+ "derive_more",
+ "fixedbitset",
+ "itertools",
+ "leafwing_input_manager_macros",
+ "once_cell",
+ "petitset",
+ "serde",
+]
+
+[[package]]
+name = "leafwing_input_manager_macros"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11aefabfcc9ef0a78bc97eea053d2f1bb050d5278a4134bdc1b769064a90064a"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "lewton"
@@ -2542,6 +2614,15 @@ checksum = "4dd7d28ee937e54fe3080c91faa1c3a46c06de6252988a7f4592ba2310ef22a4"
 dependencies = [
  "fixedbitset",
  "indexmap",
+]
+
+[[package]]
+name = "petitset"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b1a50d821a2526af6d5756c23c68e453532a986e361a3e12c9cc7fe61d862ac"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -3232,8 +3313,10 @@ name = "warlord"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_particle_systems",
  "bevy_rapier2d",
  "bytemuck",
+ "leafwing-input-manager",
  "noisy_bevy",
  "rand",
 ]

@@ -2,6 +2,7 @@ use std::{f32::consts::PI, time::Duration};
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use leafwing_input_manager::prelude::ActionState;
 
 use crate::{heat::Heat, player::Player};
 
@@ -93,14 +94,21 @@ fn fire_main_gun(
         &GlobalTransform,
         &mut ExternalImpulse,
         &Velocity,
+        &ActionState<crate::input::Action>,
     )>,
-    input: Res<Input<MouseButton>>,
     slug_visuals: Res<SlugVisuals>,
 ) {
-    for (player, mut main_gun, mut heat, transform, mut ext_impulse, player_velocity) in
-        &mut player_query
+    for (
+        player,
+        mut main_gun,
+        mut heat,
+        transform,
+        mut ext_impulse,
+        player_velocity,
+        action_state,
+    ) in &mut player_query
     {
-        if !input.pressed(MouseButton::Left) {
+        if action_state.value(crate::input::Action::FireMainGun) <= 0.0 {
             return;
         }
         if !main_gun.delay_timer.finished() {

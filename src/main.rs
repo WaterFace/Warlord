@@ -8,6 +8,7 @@ use starfield_shader::{StarfieldBundle, StarfieldCameraBundle, StarfieldMaterial
 mod camera;
 mod collectible;
 mod heat;
+mod input;
 mod inventory;
 mod physics;
 mod player;
@@ -89,6 +90,7 @@ fn main() {
         .add_plugin(collectible::CollectiblePlugin)
         .add_plugin(inventory::InventoryPlugin)
         .add_plugin(reaction::ReactionPlugin)
+        .add_plugin(input::InputPlugin)
         .add_startup_system(setup)
         .run();
 }

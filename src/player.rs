@@ -6,6 +6,7 @@ use bevy::{
     window::{PrimaryWindow, WindowRef},
 };
 use bevy_rapier2d::prelude::*;
+use leafwing_input_manager::prelude::*;
 
 use crate::{
     camera::{FocusPoint, MainCamera},
@@ -30,6 +31,8 @@ pub struct PlayerBundle {
     pub inventory: Inventory,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
+    pub action_state: ActionState<crate::input::Action>,
+    pub input_map: InputMap<crate::input::Action>,
 }
 
 impl Default for PlayerBundle {
@@ -49,6 +52,8 @@ impl Default for PlayerBundle {
             inventory: Inventory::default(),
             visibility: Visibility::Visible,
             computed_visibility: ComputedVisibility::default(),
+            action_state: ActionState::default(),
+            input_map: crate::input::default_input_map(),
         }
     }
 }
@@ -129,28 +134,40 @@ fn player_friction(mut query: Query<(&Player, &Velocity, &mut ExternalImpulse)>,
 }
 
 fn move_player(
-    mut query: Query<(&Player, &Velocity, &mut ExternalImpulse)>,
-    input: Res<Input<KeyCode>>,
+    mut query: Query<(
+        &Player,
+        &Velocity,
+        &mut ExternalImpulse,
+        &ActionState<crate::input::Action>,
+    )>,
     time: Res<Time>,
 ) {
-    let mut desired_thrust = 0.0;
-    // TODO: support analog input
-    if input.pressed(KeyCode::W) {
-        desired_thrust += 1.0;
-    }
-    if input.pressed(KeyCode::S) {
-        desired_thrust -= 1.0;
-    }
+    for (player, velocity, mut ext_impulse, action_state) in &mut query {
+        let mut desired_thrust = Vec2::ZERO;
+        desired_thrust += Vec2::Y
+            * action_state
+                .value(crate::input::Action::MoveUp)
+                .clamp(0.0, 1.0);
+        desired_thrust += Vec2::NEG_Y
+            * action_state
+                .value(crate::input::Action::MoveDown)
+                .clamp(0.0, 1.0);
+        desired_thrust += Vec2::X
+            * action_state
+                .value(crate::input::Action::MoveRight)
+                .clamp(0.0, 1.0);
+        desired_thrust += Vec2::NEG_X
+            * action_state
+                .value(crate::input::Action::MoveLeft)
+                .clamp(0.0, 1.0);
+        desired_thrust = desired_thrust.normalize_or_zero();
 
-    if let Ok((player, velocity, mut ext_impulse)) = query.get_single_mut() {
-        let direction = Vec2::new(f32::cos(player.facing), f32::sin(player.facing));
-        let desired_velocity = direction * desired_thrust * player.max_speed;
+        // let direction = Vec2::new(f32::cos(player.facing), f32::sin(player.facing));
+        let desired_velocity = desired_thrust * player.max_speed;
 
         let accel_needed = desired_velocity - velocity.linvel;
         ext_impulse.impulse +=
             accel_needed.normalize_or_zero() * player.acceleration * time.delta_seconds();
-    } else {
-        info!("get_single_mut didn't find exactly 1!")
     }
 }
 
