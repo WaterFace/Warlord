@@ -31,7 +31,7 @@ impl Default for MainGun {
 }
 
 #[derive(Component, Debug)]
-struct Slug {
+pub struct Slug {
     pub timer: Timer,
 }
 
@@ -134,6 +134,7 @@ fn fire_main_gun(
                 radius: 5.0,
                 ..Default::default()
             },
+            ActiveEvents::COLLISION_EVENTS,
             PbrBundle {
                 transform: Transform::from_xyz(pos.x, pos.y, transform.translation().z)
                     .with_rotation(rot),

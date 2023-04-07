@@ -2,13 +2,14 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 use bevy::utils::Duration;
-use bevy_rapier2d::prelude::{Collider, RigidBody, Velocity};
+use bevy_rapier2d::prelude::{Collider, CollisionEvent, RigidBody, Velocity};
 use rand::distributions::uniform::SampleUniform;
 use rand::Rng;
 
 use crate::camera::MainCamera;
 use crate::collectible::{Collectible, CollectibleBundle, MineralAppearance};
 use crate::inventory::Reagent;
+use crate::weapon::Slug;
 
 #[derive(Component, Debug, Default)]
 pub struct Rock;
@@ -107,7 +108,7 @@ fn cull_far_away_entities(
         if dist2 > cull.max_distance * cull.max_distance {
             commands.entity(e).despawn_recursive();
             if rock.is_some() {
-            rock_limit.current -= 1;
+                rock_limit.current -= 1;
             }
             debug!("Despawned entity {e:?}");
         }
@@ -242,17 +243,6 @@ fn spawn_rocks(
                     .add_child(rock_visuals);
             } else {
                 debug!("Mineral spawned!");
-                let mineral_visuals = commands
-                    .spawn((
-                        RotatingRock { angvel },
-                        PbrBundle {
-                            mesh: mineral_appearance.mesh.clone(),
-                            material: mineral_appearance.material.clone(),
-                            visibility: Visibility::Visible,
-                            ..Default::default()
-                        },
-                    ))
-                    .id();
 
                 commands
                     .spawn(CollectibleBundle {
@@ -260,11 +250,21 @@ fn spawn_rocks(
                         velocity,
                         collectible: Collectible::CollectibleReagent {
                             reagent: Reagent::Minerals,
-                            amount: 1.0,
+                            amount: 2.0,
                         },
                         ..Default::default()
                     })
-                    .add_child(mineral_visuals);
+                    .with_children(|parent| {
+                        parent.spawn((
+                            RotatingRock { angvel },
+                            PbrBundle {
+                                mesh: mineral_appearance.mesh.clone(),
+                                material: mineral_appearance.material.clone(),
+                                visibility: Visibility::Visible,
+                                ..Default::default()
+                            },
+                        ));
+                    });
             }
         }
     }
@@ -285,6 +285,75 @@ fn setup_rock_appearance(
     });
 }
 
+#[derive(Debug)]
+pub struct RockDestroyed {
+    pub entity: Entity,
+}
+
+fn handle_projectile_collisions(
+    mut reader: EventReader<CollisionEvent>,
+    rock_query: Query<&Rock>,
+    slug_query: Query<&Slug, Without<Rock>>,
+    mut writer: EventWriter<RockDestroyed>,
+) {
+    for ev in reader.iter() {
+        match ev {
+            CollisionEvent::Started(e1, e2, _flags) => {
+                if rock_query.get(*e1).is_ok() && slug_query.get(*e2).is_ok() {
+                    writer.send(RockDestroyed { entity: *e1 })
+                } else if rock_query.get(*e2).is_ok() && slug_query.get(*e1).is_ok() {
+                    writer.send(RockDestroyed { entity: *e2 })
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn handle_destruction_event(
+    mut commands: Commands,
+    mut reader: EventReader<RockDestroyed>,
+    rock_query: Query<&Transform, With<Rock>>,
+    mineral_appearance: Res<MineralAppearance>,
+) {
+    for ev in reader.iter() {
+        let Ok(rock_transform) = rock_query.get(ev.entity) else { continue; };
+        commands.entity(ev.entity).despawn_recursive();
+        for _ in 0..3 {
+            let transform = Transform::from_translation(rock_transform.translation)
+                .with_scale(Vec3::splat(0.5));
+            let velocity = Velocity::linear(random_direction());
+            let angvel = Vec3::new(
+                random_range(-PI, PI),
+                random_range(-PI, PI),
+                random_range(-PI, PI),
+            );
+
+            commands
+                .spawn(CollectibleBundle {
+                    transform,
+                    velocity,
+                    collectible: Collectible::CollectibleReagent {
+                        reagent: Reagent::Minerals,
+                        amount: 1.0,
+                    },
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn((
+                        RotatingRock { angvel },
+                        PbrBundle {
+                            mesh: mineral_appearance.mesh.clone(),
+                            material: mineral_appearance.material.clone(),
+                            visibility: Visibility::Visible,
+                            ..Default::default()
+                        },
+                    ));
+                });
+        }
+    }
+}
+
 pub struct RockPlugin;
 
 impl Plugin for RockPlugin {
@@ -293,9 +362,12 @@ impl Plugin for RockPlugin {
             .add_startup_system(setup_rock_appearance)
             .add_startup_system(spawn_first_cluster)
             .add_event::<SpawnEvent>()
+            .add_event::<RockDestroyed>()
             .add_system(spawn_rocks_tick)
             .add_system(spawn_rocks)
             .add_system(cull_far_away_entities)
-            .add_system(rotate_rocks);
+            .add_system(rotate_rocks)
+            .add_system(handle_projectile_collisions)
+            .add_system(handle_destruction_event);
     }
 }
