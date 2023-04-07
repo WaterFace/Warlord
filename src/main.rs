@@ -98,6 +98,7 @@ fn main() {
         .add_plugin(weapon::WeaponPlugin)
         .add_plugin(heat::HeatPlugin)
         .add_plugin(ui::UIPlugin)
+        .add_plugin(collectible::CollectiblePlugin)
         .add_startup_system(setup)
         .run();
 }

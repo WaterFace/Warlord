@@ -7,6 +7,7 @@ use rand::distributions::uniform::SampleUniform;
 use rand::Rng;
 
 use crate::camera::MainCamera;
+use crate::collectible::{CollectibleBundle, MineralAppearance};
 
 #[derive(Component, Debug, Default)]
 pub struct Rock;
@@ -44,6 +45,7 @@ struct RockAppearance {
 struct SpawnEvent {
     number_of_rocks: u32,
     centre_of_region: Vec2,
+    chance_of_mineral: f32,
 }
 
 #[derive(Component, Default, Debug)]
@@ -73,7 +75,7 @@ impl Default for RockLimit {
     fn default() -> Self {
         Self {
             current: 0,
-            limit: 300,
+            limit: 150,
         }
     }
 }
@@ -89,7 +91,7 @@ impl Default for Cull {
     }
 }
 
-fn cull_far_away_rocks(
+fn cull_far_away_entities(
     mut commands: Commands,
     query: Query<(Entity, &Cull, &GlobalTransform), Without<MainCamera>>,
     camera_query: Query<&GlobalTransform, With<MainCamera>>,
@@ -104,7 +106,7 @@ fn cull_far_away_rocks(
         if dist2 > cull.max_distance * cull.max_distance {
             commands.entity(e).despawn_recursive();
             rock_limit.current -= 1;
-            debug!("Despawned rock {e:?}");
+            debug!("Despawned entity {e:?}");
         }
     }
 }
@@ -141,20 +143,31 @@ fn spawn_rocks_tick(
             writer.send(SpawnEvent {
                 number_of_rocks: num,
                 centre_of_region: dir * dist + main_camera.translation().truncate(),
+                chance_of_mineral: 0.05,
             });
         }
     }
+}
+
+fn spawn_first_cluster(mut writer: EventWriter<SpawnEvent>) {
+    writer.send(SpawnEvent {
+        number_of_rocks: 50,
+        centre_of_region: Vec2::ZERO,
+        chance_of_mineral: 0.05,
+    });
 }
 
 fn spawn_rocks(
     mut commands: Commands,
     mut reader: EventReader<SpawnEvent>,
     rock_appearance: Res<RockAppearance>,
+    mineral_appearance: Res<MineralAppearance>,
     mut rock_limit: ResMut<RockLimit>,
 ) {
     for SpawnEvent {
         number_of_rocks,
         centre_of_region,
+        chance_of_mineral,
     } in reader.iter()
     {
         debug!("Trying to spawn a cluster of rocks at {centre_of_region:?} with {number_of_rocks} rocks.");
@@ -197,31 +210,55 @@ fn spawn_rocks(
                 random_range(-PI, PI),
                 random_range(-PI, PI),
             );
-            let rock_visuals = commands
-                .spawn((
-                    RotatingRock { angvel },
-                    PbrBundle {
-                        mesh: rock_appearance.mesh.clone(),
-                        material: rock_appearance.material.clone(),
-                        visibility: Visibility::Visible,
-                        ..Default::default()
-                    },
-                ))
-                .id();
+            let roll = random_range(0.0, 1.0);
+            if roll > *chance_of_mineral {
+                let rock_visuals = commands
+                    .spawn((
+                        RotatingRock { angvel },
+                        PbrBundle {
+                            mesh: rock_appearance.mesh.clone(),
+                            material: rock_appearance.material.clone(),
+                            visibility: Visibility::Visible,
+                            ..Default::default()
+                        },
+                    ))
+                    .id();
 
-            commands
-                .spawn((
-                    Rock,
-                    RigidBody::Dynamic,
-                    Collider::ball(f32::sqrt(3.0 / 4.0)),
-                    velocity,
-                    Cull::default(),
-                    transform,
-                    GlobalTransform::from(transform),
-                    Visibility::Visible,
-                    ComputedVisibility::default(),
-                ))
-                .add_child(rock_visuals);
+                commands
+                    .spawn((
+                        Rock,
+                        RigidBody::Dynamic,
+                        Collider::ball(f32::sqrt(3.0 / 4.0)),
+                        velocity,
+                        Cull::default(),
+                        transform,
+                        GlobalTransform::from(transform),
+                        Visibility::Visible,
+                        ComputedVisibility::default(),
+                    ))
+                    .add_child(rock_visuals);
+            } else {
+                debug!("Mineral spawned!");
+                let mineral_visuals = commands
+                    .spawn((
+                        RotatingRock { angvel },
+                        PbrBundle {
+                            mesh: mineral_appearance.mesh.clone(),
+                            material: mineral_appearance.material.clone(),
+                            visibility: Visibility::Visible,
+                            ..Default::default()
+                        },
+                    ))
+                    .id();
+
+                commands
+                    .spawn(CollectibleBundle {
+                        transform,
+                        velocity,
+                        ..Default::default()
+                    })
+                    .add_child(mineral_visuals);
+            }
         }
     }
 }
@@ -247,10 +284,11 @@ impl Plugin for RockPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RockLimit::default()) // TODO: make the limit configurable from outside the plugin
             .add_startup_system(setup_rock_appearance)
+            .add_startup_system(spawn_first_cluster)
             .add_event::<SpawnEvent>()
             .add_system(spawn_rocks_tick)
             .add_system(spawn_rocks)
-            .add_system(cull_far_away_rocks)
+            .add_system(cull_far_away_entities)
             .add_system(rotate_rocks);
     }
 }

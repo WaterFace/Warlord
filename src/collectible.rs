@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+use crate::player::Player;
+
 #[derive(Component, Debug, Default)]
 pub struct Collectible;
 
@@ -9,7 +11,7 @@ pub struct CollectibleBundle {
     pub collectible: Collectible,
 
     pub transform: Transform,
-    pub global_transform: Transform,
+    pub global_transform: GlobalTransform,
 
     pub mesh: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
@@ -20,6 +22,7 @@ pub struct CollectibleBundle {
     pub collider: Collider,
     pub sensor: Sensor,
     pub velocity: Velocity,
+    pub active_events: ActiveEvents,
 }
 
 impl Default for CollectibleBundle {
@@ -36,6 +39,7 @@ impl Default for CollectibleBundle {
             collider: Collider::ball(0.5),
             sensor: Default::default(),
             velocity: Default::default(),
+            active_events: ActiveEvents::COLLISION_EVENTS,
         }
     }
 }
@@ -107,8 +111,56 @@ impl From<Tetrahedron> for Mesh {
     }
 }
 
+#[derive(Component, Debug, Default)]
+pub struct Mineral {
+    pub value: f32,
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct MineralAppearance {
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<StandardMaterial>,
+}
+
+fn setup_mineral_visuals(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let material = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.0, 1.0, 1.0),
+        emissive: Color::rgb(0.0, 0.5, 0.5),
+        ..Default::default()
+    });
+
+    let mesh = meshes.add(Tetrahedron::default().into());
+
+    commands.insert_resource(MineralAppearance { material, mesh });
+}
+
+fn handle_collection(
+    mut collisions: EventReader<CollisionEvent>,
+    player_query: Query<Entity, With<Player>>,
+) {
+    for ev in collisions.iter() {
+        match ev {
+            CollisionEvent::Started(e1, e2, _flags) => {
+                if let Ok(_) = player_query.get(*e1) {
+                    debug!("Recieved collision event: {ev:?}");
+                } else if let Ok(_) = player_query.get(*e2) {
+                    debug!("Recieved collision event: {ev:?}");
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 pub struct CollectiblePlugin;
 
 impl Plugin for CollectiblePlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(setup_mineral_visuals)
+            .add_system(handle_collection);
+    }
 }
