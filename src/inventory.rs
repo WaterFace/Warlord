@@ -22,6 +22,12 @@ impl TryFrom<usize> for Reagent {
     }
 }
 
+#[derive(Debug)]
+pub struct ReagentEvent {
+    pub reagent: Reagent,
+    pub delta: f32,
+}
+
 #[derive(Component, Debug)]
 pub struct InventoryEntry {
     current: f32,
@@ -91,8 +97,8 @@ impl Default for Inventory {
                     name: "MINERALS".into(),
                 },
                 InventoryEntry {
-                    current: 5.0,
-                    limit: 10.0,
+                    current: 0.0,
+                    limit: 25.0,
                     visible: false,
                     color: Color::rgb(1.0, 0.0, 1.0),
                     name: "EXOTIC MATTER".into(),
@@ -105,11 +111,25 @@ impl Default for Inventory {
 fn handle_collection_event(
     mut reader: EventReader<CollectionEvent>,
     mut inventory_query: Query<&mut Inventory>,
+    mut writer: EventWriter<ReagentEvent>,
 ) {
     for ev in reader.iter() {
         for mut inv in &mut inventory_query {
             debug!("Adding {:?} to reagent {:?}", ev.amount, ev.reagent);
             inv.reagent_mut(ev.reagent).add(ev.amount);
+            writer.send(ReagentEvent {
+                reagent: ev.reagent,
+                delta: ev.amount,
+            });
+        }
+    }
+}
+
+fn set_visibility(mut reader: EventReader<ReagentEvent>, mut query: Query<&mut Inventory>) {
+    let Ok(mut inventory) = query.get_single_mut() else { return; };
+    for ev in reader.iter() {
+        if ev.delta > 0.0 {
+            inventory.reagent_mut(ev.reagent).visible = true;
         }
     }
 }
@@ -118,6 +138,8 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(handle_collection_event);
+        app.add_event::<ReagentEvent>()
+            .add_system(handle_collection_event)
+            .add_system(set_visibility);
     }
 }

@@ -11,6 +11,7 @@ mod heat;
 mod inventory;
 mod physics;
 mod player;
+mod reaction;
 mod rock;
 mod starfield_shader;
 mod ui;
@@ -32,20 +33,6 @@ fn setup(
         transform: Transform::from_xyz(0.0, 0.0, -1.0),
         ..Default::default()
     });
-
-    // commands.spawn(StarfieldBundle {
-    //     mesh: meshes.add(shape::Quad::default().into()),
-    //     material: mid_stars,
-    //     transform: Transform::from_xyz(0.0, 0.0, -0.5),
-    //     ..Default::default()
-    // });
-
-    // commands.spawn(StarfieldBundle {
-    //     mesh: meshes.add(shape::Quad::default().into()),
-    //     material: dust_mat,
-    //     transform: Transform::from_xyz(0.0, 0.0, 2.0),
-    //     ..Default::default()
-    // });
 
     commands.spawn(StarfieldCameraBundle {
         ..Default::default()
@@ -101,6 +88,7 @@ fn main() {
         .add_plugin(ui::UIPlugin)
         .add_plugin(collectible::CollectiblePlugin)
         .add_plugin(inventory::InventoryPlugin)
+        .add_plugin(reaction::ReactionPlugin)
         .add_startup_system(setup)
         .run();
 }
