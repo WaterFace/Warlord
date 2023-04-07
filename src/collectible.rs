@@ -1,10 +1,24 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::player::Player;
+use crate::{inventory::Reagent, player::Player};
 
-#[derive(Component, Debug, Default)]
-pub struct Collectible;
+#[derive(Component, Debug)]
+pub enum Collectible {
+    CollectibleReagent { reagent: Reagent, amount: f32 },
+    Other,
+}
+
+impl Default for Collectible {
+    fn default() -> Self {
+        Collectible::Other
+    }
+}
+
+pub struct CollectionEvent {
+    pub reagent: Reagent,
+    pub amount: f32,
+}
 
 #[derive(Bundle, Debug)]
 pub struct CollectibleBundle {
@@ -138,17 +152,42 @@ fn setup_mineral_visuals(
     commands.insert_resource(MineralAppearance { material, mesh });
 }
 
-fn handle_collection(
+fn handle_collision(
+    mut commands: Commands,
     mut collisions: EventReader<CollisionEvent>,
     player_query: Query<Entity, With<Player>>,
+    collectible_query: Query<&Collectible, Without<Player>>,
+    mut writer: EventWriter<CollectionEvent>,
 ) {
     for ev in collisions.iter() {
         match ev {
             CollisionEvent::Started(e1, e2, _flags) => {
                 if let Ok(_) = player_query.get(*e1) {
-                    debug!("Recieved collision event: {ev:?}");
+                    if let Ok(collectible) = collectible_query.get(*e2) {
+                        match collectible {
+                            Collectible::CollectibleReagent { reagent, amount } => {
+                                writer.send(CollectionEvent {
+                                    reagent: *reagent,
+                                    amount: *amount,
+                                });
+                            }
+                            _ => warn!("Collected a collectible with no associated Reagent. That's probably not intentional."),
+                        }
+                        commands.entity(*e2).despawn_recursive();
+                    }
                 } else if let Ok(_) = player_query.get(*e2) {
-                    debug!("Recieved collision event: {ev:?}");
+                    if let Ok(collectible) = collectible_query.get(*e1) {
+                        match collectible {
+                            Collectible::CollectibleReagent { reagent, amount } => {
+                                writer.send(CollectionEvent {
+                                    reagent: *reagent,
+                                    amount: *amount,
+                                });
+                            }
+                            _ => warn!("Collected a collectible with no associated Reagent. That's probably not intentional."),
+                        }
+                        commands.entity(*e1).despawn_recursive();
+                    }
                 }
             }
             _ => {}
@@ -161,6 +200,7 @@ pub struct CollectiblePlugin;
 impl Plugin for CollectiblePlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_mineral_visuals)
-            .add_system(handle_collection);
+            .add_system(handle_collision)
+            .add_event::<CollectionEvent>();
     }
 }

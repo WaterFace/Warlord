@@ -7,7 +7,8 @@ use rand::distributions::uniform::SampleUniform;
 use rand::Rng;
 
 use crate::camera::MainCamera;
-use crate::collectible::{CollectibleBundle, MineralAppearance};
+use crate::collectible::{Collectible, CollectibleBundle, MineralAppearance};
+use crate::inventory::Reagent;
 
 #[derive(Component, Debug, Default)]
 pub struct Rock;
@@ -255,6 +256,10 @@ fn spawn_rocks(
                     .spawn(CollectibleBundle {
                         transform,
                         velocity,
+                        collectible: Collectible::CollectibleReagent {
+                            reagent: Reagent::Minerals,
+                            amount: 1.0,
+                        },
                         ..Default::default()
                     })
                     .add_child(mineral_visuals);

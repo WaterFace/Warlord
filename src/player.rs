@@ -10,6 +10,7 @@ use bevy_rapier2d::prelude::*;
 use crate::{
     camera::{FocusPoint, MainCamera},
     heat::Heat,
+    inventory::Inventory,
     weapon::MainGun,
 };
 
@@ -26,6 +27,7 @@ pub struct PlayerBundle {
     pub focus_point: FocusPoint,
     pub main_gun: MainGun,
     pub heat: Heat,
+    pub inventory: Inventory,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
 }
@@ -44,6 +46,7 @@ impl Default for PlayerBundle {
             focus_point: FocusPoint::default(),
             main_gun: MainGun::default(),
             heat: Heat::default(),
+            inventory: Inventory::default(),
             visibility: Visibility::Visible,
             computed_visibility: ComputedVisibility::default(),
         }
