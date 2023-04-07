@@ -150,10 +150,7 @@ fn reposition_reagent_bar(
 
 fn update_reagent_bar_visibility(
     mut reagent_bar_query: Query<(&mut Visibility, &ReagentBarAnchor)>,
-    inventory_query: Query<
-        &Inventory,
-        (With<Player>, Without<ReagentBarAnchor>, Changed<Inventory>),
-    >,
+    inventory_query: Query<&Inventory, (With<Player>, Without<ReagentBarAnchor>)>,
 ) {
     let Ok(inventory) = inventory_query.get_single() else { return; };
 
