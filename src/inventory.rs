@@ -3,17 +3,30 @@ use bevy::prelude::*;
 use crate::collectible::CollectionEvent;
 
 // KEEP THIS UPDATED:
-const REAGENT_TYPES: usize = 1;
+pub const REAGENT_TYPES: usize = 1;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Reagent {
     Minerals = 0,
 }
 
+impl TryFrom<usize> for Reagent {
+    type Error = ();
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Minerals),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Component, Debug)]
 pub struct InventoryEntry {
     current: f32,
     limit: f32,
+    visible: bool,
+    color: Color,
+    name: String,
 }
 
 impl InventoryEntry {
@@ -23,6 +36,18 @@ impl InventoryEntry {
 
     pub fn limit(&self) -> f32 {
         self.limit
+    }
+
+    pub fn visibile(&self) -> bool {
+        self.visible
+    }
+
+    pub fn color(&self) -> Color {
+        self.color
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn fraction(&self) -> f32 {
@@ -47,6 +72,9 @@ impl Inventory {
     pub fn reagent_mut(&mut self, reagent: Reagent) -> &mut InventoryEntry {
         &mut self.reagents[reagent as usize]
     }
+    pub fn reagents(&self) -> impl Iterator<Item = (Reagent, &'_ InventoryEntry)> {
+        self.reagents.iter().enumerate().map(|(i, e)| (TryInto::<Reagent>::try_into(i).expect("There should be the same number of entries in `reagents` as there are in the Reagent enum."), e))
+    }
 }
 
 impl Default for Inventory {
@@ -55,6 +83,9 @@ impl Default for Inventory {
             reagents: [InventoryEntry {
                 current: 0.0,
                 limit: 10.0,
+                visible: true,
+                color: Color::CYAN,
+                name: "MINERALS".into(),
             }],
         }
     }
