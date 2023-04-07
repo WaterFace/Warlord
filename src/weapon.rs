@@ -47,7 +47,7 @@ fn setup_slug(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let material = materials.add(StandardMaterial {
-        base_color: Color::WHITE,
+        base_color: Color::ORANGE_RED * 5.0,
         emissive: Color::rgb(5.0, 5.0, 5.0),
         ..Default::default()
     });
@@ -131,7 +131,7 @@ fn fire_main_gun(
             PointLight {
                 color: Color::ORANGE_RED,
                 intensity: 4000.0,
-                radius: 2.0,
+                radius: 5.0,
                 ..Default::default()
             },
             PbrBundle {
