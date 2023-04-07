@@ -204,7 +204,7 @@ fn setup_ui_bar<T: Component, U: Component>(
                     ),
                     text_anchor: Anchor::TopLeft,
                     text_2d_bounds: Text2dBounds {
-                        size: Vec2::new(150.0, 50.0),
+                        size: Vec2::new(BAR_LENGTH, 50.0),
                     },
                     transform: Transform::from_xyz(NUDGE_RIGHT, -NUDGE_DOWN, 2.0),
                     ..Default::default()
@@ -224,7 +224,7 @@ fn setup_ui_bar<T: Component, U: Component>(
                     ),
                     text_anchor: Anchor::TopLeft,
                     text_2d_bounds: Text2dBounds {
-                        size: Vec2::new(150.0, 50.0),
+                        size: Vec2::new(BAR_LENGTH, 50.0),
                     },
                     transform: Transform::from_xyz(NUDGE_RIGHT + 2.0, -NUDGE_DOWN - 2.0, 1.9),
                     ..Default::default()
