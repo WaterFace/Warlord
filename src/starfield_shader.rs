@@ -108,57 +108,50 @@ impl Default for StarfieldCameraBundle {
 #[uuid = "c58cc961-65cf-4eef-b3be-e12b99f55ec5"]
 #[uniform(0, StarfieldMaterialUniform)]
 pub struct StarfieldMaterial {
-    // fields for the noise that forms the stars
-    pub scale: f32,
-    pub ramp_cutoff: f32,
-    pub octaves: i32,
-    pub lacunarity: f32,
-    pub gain: f32,
-
-    // fields for the brightness noise
-    pub brightness_scale: f32,
-    pub brightness_octaves: i32,
-    pub brightness_lacunarity: f32,
-    pub brightness_gain: f32,
-
-    // scalar for the final brightness
-    pub brightness: f32,
-
-    // Parallax parameters
     pub parallax_factor: f32,
     pub camera_position: Vec2,
 
     pub resolution: Vec2,
 }
 
+impl Default for StarfieldMaterial {
+    fn default() -> Self {
+        Self {
+            parallax_factor: 1.0,
+            camera_position: Vec2::ZERO,
+            resolution: Vec2::ZERO,
+        }
+    }
+}
+
 impl Material for StarfieldMaterial {
+    fn vertex_shader() -> ShaderRef {
+        "shaders/starfield.vert".into()
+    }
+
     fn fragment_shader() -> ShaderRef {
-        "shaders/starfield.wgsl".into()
+        // "shaders/starfield.wgsl".into()
+        "shaders/starfield.frag".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
         AlphaMode::Blend
     }
+
+    fn specialize(
+        _pipeline: &bevy::pbr::MaterialPipeline<Self>,
+        descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
+        _layout: &bevy::render::mesh::MeshVertexBufferLayout,
+        _key: bevy::pbr::MaterialPipelineKey<Self>,
+    ) -> Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
+        descriptor.vertex.entry_point = "main".into();
+        descriptor.fragment.as_mut().unwrap().entry_point = "main".into();
+        Ok(())
+    }
 }
 
 #[derive(ShaderType)]
 struct StarfieldMaterialUniform {
-    // fields for the noise that forms the stars
-    pub scale: f32,
-    pub ramp_cutoff: f32,
-    pub octaves: i32,
-    pub lacunarity: f32,
-    pub gain: f32,
-
-    // fields for the brightness noise
-    pub brightness_scale: f32,
-    pub brightness_octaves: i32,
-    pub brightness_lacunarity: f32,
-    pub brightness_gain: f32,
-
-    // scalar for the final brightness
-    pub brightness: f32,
-
     // parallax parameters
     pub parallax_factor: f32,
     pub camera_position: Vec2,
@@ -172,19 +165,6 @@ impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
         _images: &bevy::render::render_asset::RenderAssets<Image>,
     ) -> StarfieldMaterialUniform {
         StarfieldMaterialUniform {
-            scale: self.scale,
-            ramp_cutoff: self.ramp_cutoff,
-            octaves: self.octaves,
-            lacunarity: self.lacunarity,
-            gain: self.gain,
-
-            brightness_scale: self.brightness_scale,
-            brightness_octaves: self.brightness_octaves,
-            brightness_lacunarity: self.brightness_lacunarity,
-            brightness_gain: self.brightness_gain,
-
-            brightness: self.brightness,
-
             parallax_factor: self.parallax_factor,
             camera_position: self.camera_position,
             resolution: self.resolution,
@@ -192,11 +172,7 @@ impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
     }
 }
 
-fn update_starfield(
-    main_camera_query: Query<
-        &GlobalTransform,
-        (With<MainCamera>, Without<Handle<StarfieldMaterial>>),
-    >,
+fn update_starfield_on_resize(
     starfield_camera_query: Query<&Projection, (With<StarfieldCamera>, Changed<Projection>)>,
     mut starfield_query: Query<&mut Transform, With<StarfieldMesh>>,
     mut starfields: ResMut<Assets<StarfieldMaterial>>,
@@ -206,9 +182,7 @@ fn update_starfield(
     let Rect { min, max } = proj.area;
     let size = Vec2::abs(max - min);
 
-    let main_camera = main_camera_query.single();
     for mut starfield in starfields.iter_mut() {
-        starfield.1.camera_position = main_camera.translation().truncate();
         starfield.1.resolution = size;
     }
 
@@ -218,12 +192,26 @@ fn update_starfield(
     }
 }
 
+fn update_starfield_camera_position(
+    main_camera_query: Query<
+        &GlobalTransform,
+        (With<MainCamera>, Without<Handle<StarfieldMaterial>>),
+    >,
+    mut starfields: ResMut<Assets<StarfieldMaterial>>,
+) {
+    let main_camera = main_camera_query.single();
+    for mut starfield in starfields.iter_mut() {
+        starfield.1.camera_position = main_camera.translation().truncate();
+    }
+}
+
 pub struct StarfieldShaderPlugin;
 
 impl Plugin for StarfieldShaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(NoisyShaderPlugin)
             .add_plugin(MaterialPlugin::<StarfieldMaterial>::default())
-            .add_system(update_starfield);
+            .add_system(update_starfield_on_resize)
+            .add_system(update_starfield_camera_position);
     }
 }

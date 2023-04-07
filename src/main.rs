@@ -21,23 +21,8 @@ fn setup(
     mut starfields: ResMut<Assets<StarfieldMaterial>>,
 ) {
     let distant_stars = starfields.add(StarfieldMaterial {
-        scale: 50.0,
-        ramp_cutoff: 0.85,
-        octaves: 1,
-        lacunarity: 1.0,
-        gain: 1.0,
-
-        brightness_scale: 10.0,
-        brightness_octaves: 8,
-        brightness_lacunarity: 0.5,
-        brightness_gain: 1.0,
-
-        brightness: 10.0,
-
         parallax_factor: 0.25,
-        camera_position: Vec2::ZERO,
-
-        resolution: Vec2::ZERO,
+        ..Default::default()
     });
 
     commands.spawn(StarfieldBundle {
