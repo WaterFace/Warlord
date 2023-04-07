@@ -13,6 +13,7 @@ pub struct MainGun {
     pub projectile_speed: f32,
     pub max_projectile_distance: f32,
     pub origin_distance: f32,
+    pub heat_generated: f32,
 }
 
 impl Default for MainGun {
@@ -24,6 +25,7 @@ impl Default for MainGun {
             projectile_speed: 45.0,
             max_projectile_distance: 15.0,
             origin_distance: 1.5,
+            heat_generated: 8.0,
         }
     }
 }
@@ -90,18 +92,24 @@ fn fire_main_gun(
         &mut Heat,
         &GlobalTransform,
         &mut ExternalImpulse,
+        &Velocity,
     )>,
     input: Res<Input<MouseButton>>,
     slug_visuals: Res<SlugVisuals>,
 ) {
-    for (player, mut main_gun, mut heat, transform, mut ext_impulse) in &mut player_query {
+    for (player, mut main_gun, mut heat, transform, mut ext_impulse, player_velocity) in
+        &mut player_query
+    {
         if !input.pressed(MouseButton::Left) {
             return;
         }
         if !main_gun.delay_timer.finished() {
             return;
         }
-        // TODO: prevent firing if we're overheated
+        if heat.limit() - heat.current() < main_gun.heat_generated {
+            // prevent firing if we're overheated
+            return;
+        }
 
         let facing_dir = Vec2::from_angle(player.facing);
         let pos = transform.translation().truncate() + facing_dir * main_gun.origin_distance;
@@ -109,7 +117,7 @@ fn fire_main_gun(
 
         let time_to_live = main_gun.max_projectile_distance / main_gun.projectile_speed;
 
-        let velocity = facing_dir * main_gun.projectile_speed;
+        let velocity = facing_dir * main_gun.projectile_speed + player_velocity.linvel;
 
         commands.spawn((
             Slug {
@@ -137,7 +145,7 @@ fn fire_main_gun(
 
         ext_impulse.impulse += -facing_dir * main_gun.recoil;
 
-        heat.add(8.0);
+        heat.add(main_gun.heat_generated);
 
         let delay = Duration::from_secs_f32(main_gun.fire_delay);
         main_gun.delay_timer.reset();

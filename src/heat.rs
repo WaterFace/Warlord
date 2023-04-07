@@ -17,6 +17,9 @@ impl Heat {
     pub fn current(&self) -> f32 {
         self.current
     }
+    pub fn limit(&self) -> f32 {
+        self.limit
+    }
     pub fn fraction(&self) -> f32 {
         self.current / self.limit
     }
