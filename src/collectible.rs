@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::{inventory::Reagent, player::Player};
+use crate::{inventory::Reagent, player::Player, rock::Cull};
 
 #[derive(Component, Debug)]
 pub enum Collectible {
@@ -37,6 +37,8 @@ pub struct CollectibleBundle {
     pub sensor: Sensor,
     pub velocity: Velocity,
     pub active_events: ActiveEvents,
+
+    pub cull: Cull,
 }
 
 impl Default for CollectibleBundle {
@@ -54,6 +56,7 @@ impl Default for CollectibleBundle {
             sensor: Default::default(),
             velocity: Default::default(),
             active_events: ActiveEvents::COLLISION_EVENTS,
+            cull: Cull::default(),
         }
     }
 }

@@ -82,7 +82,7 @@ impl Default for RockLimit {
 }
 
 #[derive(Component, Debug)]
-struct Cull {
+pub struct Cull {
     max_distance: f32,
 }
 
@@ -94,19 +94,21 @@ impl Default for Cull {
 
 fn cull_far_away_entities(
     mut commands: Commands,
-    query: Query<(Entity, &Cull, &GlobalTransform), Without<MainCamera>>,
+    query: Query<(Entity, &Cull, &GlobalTransform, Option<&Rock>), Without<MainCamera>>,
     camera_query: Query<&GlobalTransform, With<MainCamera>>,
     mut rock_limit: ResMut<RockLimit>,
 ) {
     let main_camera = camera_query.single();
-    for (e, cull, transform) in &query {
+    for (e, cull, transform, rock) in &query {
         let dist2 = Vec2::distance_squared(
             transform.translation().truncate(),
             main_camera.translation().truncate(),
         );
         if dist2 > cull.max_distance * cull.max_distance {
             commands.entity(e).despawn_recursive();
+            if rock.is_some() {
             rock_limit.current -= 1;
+            }
             debug!("Despawned entity {e:?}");
         }
     }
