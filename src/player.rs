@@ -131,16 +131,22 @@ fn player_friction(mut query: Query<(&Player, &Velocity, &mut ExternalImpulse)>,
     }
 }
 
+pub struct PlayerMoveEvent {
+    pub position: Vec3,
+}
+
 fn move_player(
     mut query: Query<(
         &Player,
         &Velocity,
         &mut ExternalImpulse,
         &ActionState<crate::input::Action>,
+        &Transform,
     )>,
     time: Res<Time>,
+    mut writer: EventWriter<PlayerMoveEvent>,
 ) {
-    for (player, velocity, mut ext_impulse, action_state) in &mut query {
+    for (player, velocity, mut ext_impulse, action_state, transform) in &mut query {
         let mut desired_thrust = Vec2::ZERO;
         desired_thrust += Vec2::Y
             * action_state
@@ -166,6 +172,12 @@ fn move_player(
         let accel_needed = desired_velocity - velocity.linvel;
         ext_impulse.impulse +=
             accel_needed.normalize_or_zero() * player.acceleration * time.delta_seconds();
+
+        if desired_thrust.length_squared() > 0.0 {
+            writer.send(PlayerMoveEvent {
+                position: transform.translation,
+            });
+        }
     }
 }
 
@@ -322,7 +334,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_player_model_handles)
+        app.add_event::<PlayerMoveEvent>()
+            .add_startup_system(setup_player_model_handles)
             .add_systems(
                 (rotate_player, player_friction, move_player)
                     .chain()

@@ -274,11 +274,12 @@ fn setup_rock_appearance(
 #[derive(Debug)]
 pub struct RockDestroyed {
     pub entity: Entity,
+    pub position: Vec3,
 }
 
 fn handle_projectile_collisions(
     mut reader: EventReader<CollisionEvent>,
-    rock_query: Query<&Rock>,
+    rock_query: Query<&Transform, With<Rock>>,
     slug_query: Query<&Slug, Without<Rock>>,
     mut writer: EventWriter<RockDestroyed>,
 ) {
@@ -286,9 +287,19 @@ fn handle_projectile_collisions(
         match ev {
             CollisionEvent::Started(e1, e2, _flags) => {
                 if rock_query.get(*e1).is_ok() && slug_query.get(*e2).is_ok() {
-                    writer.send(RockDestroyed { entity: *e1 })
+                    if let Ok(rock_transform) = rock_query.get(*e1) {
+                        writer.send(RockDestroyed {
+                            entity: *e1,
+                            position: rock_transform.translation,
+                        })
+                    }
                 } else if rock_query.get(*e2).is_ok() && slug_query.get(*e1).is_ok() {
-                    writer.send(RockDestroyed { entity: *e2 })
+                    if let Ok(rock_transform) = rock_query.get(*e2) {
+                        writer.send(RockDestroyed {
+                            entity: *e2,
+                            position: rock_transform.translation,
+                        })
+                    }
                 }
             }
             _ => {}
@@ -349,13 +360,16 @@ impl Plugin for RockPlugin {
             .add_startup_system(spawn_first_cluster)
             .add_event::<SpawnEvent>()
             .add_event::<RockDestroyed>()
-            .add_systems((
-                spawn_rocks_tick,
-                spawn_rocks,
-                cull_far_away_entities,
-                rotate_rocks,
-                handle_projectile_collisions,
-                handle_destruction_event,
-            ).in_set(OnUpdate(GameState::InGame)));
+            .add_systems(
+                (
+                    spawn_rocks_tick,
+                    spawn_rocks,
+                    cull_far_away_entities,
+                    rotate_rocks,
+                    handle_projectile_collisions,
+                    handle_destruction_event,
+                )
+                    .in_set(OnUpdate(GameState::InGame)),
+            );
     }
 }

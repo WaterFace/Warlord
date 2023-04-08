@@ -11,6 +11,7 @@ mod heat;
 mod input;
 mod inventory;
 mod menu;
+mod particles;
 mod physics;
 mod player;
 mod reaction;
@@ -18,6 +19,7 @@ mod rock;
 mod starfield_shader;
 mod state;
 mod ui;
+mod util;
 mod weapon;
 
 fn setup(
@@ -95,6 +97,7 @@ fn main() {
         .add_plugin(reaction::ReactionPlugin)
         .add_plugin(input::InputPlugin)
         .add_plugin(menu::MenuPlugin)
+        .add_plugin(particles::ParticlePlugin)
         .add_startup_system(setup)
         .run();
 }

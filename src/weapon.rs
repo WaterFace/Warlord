@@ -70,10 +70,23 @@ fn tick_slug(mut query: Query<&mut Slug>, time: Res<Time>) {
     }
 }
 
-fn kill_slug(mut commands: Commands, query: Query<(Entity, &Slug)>) {
-    for (e, slug) in &query {
+pub struct SlugDecayedEvent {
+    pub position: Vec3,
+    pub velocity: Vec2,
+}
+
+fn kill_slug(
+    mut commands: Commands,
+    query: Query<(Entity, &Transform, &Velocity, &Slug)>,
+    mut writer: EventWriter<SlugDecayedEvent>,
+) {
+    for (e, transform, velocity, slug) in &query {
         if slug.timer.finished() {
             commands.entity(e).despawn_recursive();
+            writer.send(SlugDecayedEvent {
+                position: transform.translation,
+                velocity: velocity.linvel,
+            });
         }
     }
 }
@@ -83,6 +96,11 @@ fn tick_gun_timer(mut query: Query<&mut MainGun>, time: Res<Time>) {
         gun.delay_timer
             .tick(Duration::from_secs_f32(time.delta_seconds()));
     }
+}
+
+pub struct FireMainGunEvent {
+    pub position: Vec3,
+    pub facing: f32,
 }
 
 fn fire_main_gun(
@@ -97,6 +115,7 @@ fn fire_main_gun(
         &ActionState<crate::input::Action>,
     )>,
     slug_visuals: Res<SlugVisuals>,
+    mut writer: EventWriter<FireMainGunEvent>,
 ) {
     for (
         player,
@@ -152,6 +171,11 @@ fn fire_main_gun(
             },
         ));
 
+        writer.send(FireMainGunEvent {
+            position: Vec3::new(pos.x, pos.y, transform.translation().z),
+            facing: player.facing,
+        });
+
         ext_impulse.impulse += -facing_dir * main_gun.recoil;
 
         heat.add(main_gun.heat_generated);
@@ -166,7 +190,9 @@ pub struct WeaponPlugin;
 
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_slug)
+        app.add_event::<FireMainGunEvent>()
+            .add_event::<SlugDecayedEvent>()
+            .add_startup_system(setup_slug)
             .add_systems(
                 (tick_slug, kill_slug)
                     .chain()
