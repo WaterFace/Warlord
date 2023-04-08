@@ -77,7 +77,7 @@ impl Default for StarfieldCameraBundle {
                     blend_state: Some(BlendState::ALPHA_BLENDING),
                     color_attachment_load_op: LoadOp::Load,
                 },
-                order: 1,
+                order: -1,
                 ..Default::default()
             },
             camera_render_graph: CameraRenderGraph::new(bevy::core_pipeline::core_3d::graph::NAME),
@@ -135,7 +135,7 @@ impl Material for StarfieldMaterial {
     }
 
     fn alpha_mode(&self) -> AlphaMode {
-        AlphaMode::Blend
+        AlphaMode::Opaque
     }
 
     fn specialize(

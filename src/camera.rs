@@ -48,7 +48,7 @@ impl Default for MainCameraBundle {
             transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_to(Vec3::NEG_Z, Vec3::Y),
             global_transform: Default::default(),
             camera_3d: Camera3d {
-                clear_color: ClearColorConfig::Custom(Color::BLACK),
+                clear_color: ClearColorConfig::None,
                 ..Default::default()
             },
             tonemapping: Tonemapping::AcesFitted,
