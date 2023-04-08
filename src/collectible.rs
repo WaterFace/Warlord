@@ -196,6 +196,34 @@ fn exotic_matter_friction(mut query: Query<&mut Velocity, With<ExoticMatter>>, t
     }
 }
 
+#[derive(Resource, Debug, Default)]
+pub struct StrangeMatterAppearance {
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<StandardMaterial>,
+}
+
+fn setup_strange_matter_visuals(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let material = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.0, 1.0, 0.0),
+        emissive: Color::rgb(0.0, 1.0, 0.0) * 3.0,
+        ..Default::default()
+    });
+
+    let mesh = meshes.add(
+        shape::UVSphere {
+            radius: 0.25,
+            ..Default::default()
+        }
+        .into(),
+    );
+
+    commands.insert_resource(StrangeMatterAppearance { material, mesh });
+}
+
 fn handle_collision(
     mut commands: Commands,
     mut collisions: EventReader<CollisionEvent>,
@@ -245,6 +273,7 @@ impl Plugin for CollectiblePlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_mineral_visuals)
             .add_startup_system(setup_exotic_matter_visuals)
+            .add_startup_system(setup_strange_matter_visuals)
             .add_systems(
                 (handle_collision, exotic_matter_friction).in_set(OnUpdate(GameState::InGame)),
             )

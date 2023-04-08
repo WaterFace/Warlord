@@ -3,12 +3,14 @@ use bevy::prelude::*;
 use crate::{collectible::CollectionEvent, state::GameState};
 
 // KEEP THIS UPDATED:
-pub const REAGENT_TYPES: usize = 2;
+pub const REAGENT_TYPES: usize = 4;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Reagent {
     Minerals = 0,
     Exotic = 1,
+    Waste = 2,
+    Strange = 3,
 }
 
 impl TryFrom<usize> for Reagent {
@@ -17,6 +19,8 @@ impl TryFrom<usize> for Reagent {
         match value {
             0 => Ok(Self::Minerals),
             1 => Ok(Self::Exotic),
+            2 => Ok(Self::Waste),
+            3 => Ok(Self::Strange),
             _ => Err(()),
         }
     }
@@ -102,6 +106,20 @@ impl Default for Inventory {
                     visible: false,
                     color: Color::rgb(1.0, 0.0, 1.0),
                     name: "EXOTIC MATTER".into(),
+                },
+                InventoryEntry {
+                    current: 0.0,
+                    limit: 5.0,
+                    visible: false,
+                    color: Color::rgb(0.3, 0.1, 0.1),
+                    name: "WASTE".into(),
+                },
+                InventoryEntry {
+                    current: 0.0,
+                    limit: 50.0,
+                    visible: false,
+                    color: Color::rgb(0.0, 1.0, 0.0),
+                    name: "STRANGE MATTER".into(),
                 },
             ],
         }

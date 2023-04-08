@@ -1,8 +1,14 @@
-use bevy::{prelude::*, render::render_resource::Face};
+use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::{player::Player, state::GameState};
+use crate::{
+    collectible::{Collectible, CollectibleBundle, StrangeMatterAppearance},
+    inventory::Reagent,
+    player::Player,
+    rock::{Rock, RockDestroyed},
+    state::GameState,
+};
 
 #[derive(Resource)]
 struct ShieldVisuals {
@@ -31,7 +37,7 @@ pub struct ShieldBundle {
     pub shield: Shield,
     pub collider: Collider,
     pub sensor: Sensor,
-    pub additional_mass_properties: AdditionalMassProperties,
+    pub active_events: ActiveEvents,
 }
 
 impl Default for ShieldBundle {
@@ -46,7 +52,7 @@ impl Default for ShieldBundle {
             shield: Default::default(),
             collider: Collider::ball(2.5),
             sensor: Default::default(),
-            additional_mass_properties: AdditionalMassProperties::Mass(0.0),
+            active_events: ActiveEvents::COLLISION_EVENTS,
         }
     }
 }
@@ -119,11 +125,130 @@ fn spawn_despawn_shield(
     }
 }
 
+#[derive(Debug)]
+pub enum ShieldCollision {
+    Rock {
+        entity: Entity,
+        position: Vec3,
+    },
+    Collectible {
+        entity: Entity,
+        position: Vec3,
+        reagent: Reagent,
+        amount: f32,
+    },
+}
+
+fn handle_collision(
+    mut collisions: EventReader<CollisionEvent>,
+    shield_query: Query<Entity, With<Shield>>,
+    collectible_query: Query<(&Collectible, &Transform), Without<Player>>,
+    rock_query: Query<(&Rock, &Transform), (Without<Player>, Without<Collectible>)>,
+    mut writer: EventWriter<ShieldCollision>,
+) {
+    for ev in collisions.iter() {
+        match ev {
+            CollisionEvent::Started(e1, e2, _flags) => {
+                if let Ok(_) = shield_query.get(*e1) {
+                    if let Ok((collectible, transform)) = collectible_query.get(*e2) {
+                        match collectible {
+                          Collectible::CollectibleReagent { reagent, amount } => {
+                            writer.send(ShieldCollision::Collectible {
+                                entity: *e2,
+                                position: transform.translation,
+                                reagent: *reagent,
+                                amount: *amount,
+                            });
+                          }
+                          _ => warn!("Shield collided with a collectible with no associated Reagent. That's probably not intentional."),
+                      }
+                    } else if let Ok((_rock, transform)) = rock_query.get(*e2) {
+                        writer.send(ShieldCollision::Rock {
+                            entity: *e2,
+                            position: transform.translation,
+                        })
+                    }
+                } else if let Ok(_) = shield_query.get(*e2) {
+                    if let Ok((collectible, transform)) = collectible_query.get(*e1) {
+                        match collectible {
+                          Collectible::CollectibleReagent { reagent, amount } => {
+                            writer.send(ShieldCollision::Collectible {
+                                entity: *e1,
+                                position: transform.translation,
+                                reagent: *reagent,
+                                amount: *amount,
+                            });
+                          }
+                          _ => warn!("Shield collided with a collectible with no associated Reagent. That's probably not intentional."),
+                      }
+                    } else if let Ok((_rock, transform)) = rock_query.get(*e1) {
+                        writer.send(ShieldCollision::Rock {
+                            entity: *e1,
+                            position: transform.translation,
+                        })
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn handle_shield_collisions(
+    mut commands: Commands,
+    mut reader: EventReader<ShieldCollision>,
+    mut writer: EventWriter<RockDestroyed>,
+    strange_matter_appearance: Res<StrangeMatterAppearance>,
+) {
+    for ev in reader.iter() {
+        match ev {
+            ShieldCollision::Rock { entity, position } => writer.send(RockDestroyed {
+                entity: *entity,
+                position: *position,
+            }),
+            ShieldCollision::Collectible {
+                entity,
+                position,
+                reagent,
+                amount,
+            } => {
+                match reagent {
+                    Reagent::Exotic => {
+                        commands.entity(*entity).despawn_recursive();
+                        commands.spawn(CollectibleBundle {
+                            transform: Transform::from_translation(*position),
+                            mesh: strange_matter_appearance.mesh.clone(),
+                            material: strange_matter_appearance.material.clone(),
+                            collectible: Collectible::CollectibleReagent {
+                                reagent: Reagent::Strange,
+                                amount: *amount,
+                            },
+                            ..Default::default()
+                        });
+                    }
+                    Reagent::Strange => {
+                        // Do Nothing
+                    }
+                    _ => commands.entity(*entity).despawn_recursive(),
+                }
+            }
+        }
+    }
+}
+
 pub struct ShieldPlugin;
 
 impl Plugin for ShieldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_shield_visuals)
-            .add_system(spawn_despawn_shield.in_set(OnUpdate(GameState::InGame)));
+        app.add_event::<ShieldCollision>()
+            .add_startup_system(setup_shield_visuals)
+            .add_systems(
+                (
+                    spawn_despawn_shield,
+                    handle_collision,
+                    handle_shield_collisions,
+                )
+                    .in_set(OnUpdate(GameState::InGame)),
+            );
     }
 }
