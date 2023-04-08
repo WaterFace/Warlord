@@ -68,8 +68,8 @@ fn setup_particle_handles(
     );
 
     let fire_main_gun_particle_mat = materials.add(StandardMaterial {
-        base_color: Color::WHITE * 15.0,
-        emissive: Color::RED * 15.0,
+        base_color: Color::WHITE * 5.0,
+        emissive: Color::RED * 5.0,
         ..Default::default()
     });
     let fire_main_gun_particle_mesh = meshes.add(
