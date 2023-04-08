@@ -54,7 +54,10 @@ impl Default for MainCameraBundle {
             tonemapping: Tonemapping::AcesFitted,
             dither: Default::default(),
             color_grading: Default::default(),
-            bloom_settings: BloomSettings::default(),
+            bloom_settings: BloomSettings {
+                intensity: 0.5,
+                ..Default::default()
+            },
             smooth_follow: Default::default(),
             main_camera: Default::default(),
         }
