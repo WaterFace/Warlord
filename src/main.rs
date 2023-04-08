@@ -10,6 +10,7 @@ mod collectible;
 mod heat;
 mod input;
 mod inventory;
+mod menu;
 mod physics;
 mod player;
 mod reaction;
@@ -91,6 +92,7 @@ fn main() {
         .add_plugin(inventory::InventoryPlugin)
         .add_plugin(reaction::ReactionPlugin)
         .add_plugin(input::InputPlugin)
+        .add_plugin(menu::MenuPlugin)
         .add_startup_system(setup)
         .run();
 }
