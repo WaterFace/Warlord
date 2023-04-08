@@ -26,6 +26,7 @@ impl Default for MenuButton {
 #[derive(Debug, Clone, Copy)]
 pub enum MenuEvent {
     Start,
+    Continue,
     Resume,
     Settings,
     Exit,
@@ -190,6 +191,89 @@ fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuR
     }
 }
 
+#[derive(Component)]
+struct IntroMenuRoot;
+
+fn markup_to_text_sections(
+    input: &str,
+    font: Handle<Font>,
+    font_size: f32,
+    highlight_color: Color,
+    normal_color: Color,
+) -> Vec<TextSection> {
+    let mut result: Vec<_> = Vec::new();
+    let split = input.split('*');
+    let normal_style = TextStyle {
+        color: normal_color,
+        font: font.clone(),
+        font_size,
+    };
+    let highlight_style = TextStyle {
+        color: highlight_color,
+        font: font.clone(),
+        font_size,
+    };
+
+    let mut highlight = false;
+    for s in split {
+        if highlight {
+            result.push(TextSection {
+                value: s.to_owned(),
+                style: highlight_style.clone(),
+            });
+        } else {
+            result.push(TextSection {
+                value: s.to_owned(),
+                style: normal_style.clone(),
+            });
+        }
+        highlight = !highlight;
+    }
+
+    return result;
+}
+
+fn setup_intro_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
+    let font = assets_server.load("font/BebasNeueRegular.otf");
+
+    let story = include_str!("story.txt");
+    let text = markup_to_text_sections(story, font.clone(), 30.0, Color::ORANGE_RED, TEXT_COLOR);
+
+    commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::width(Val::Percent(100.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    flex_direction: FlexDirection::Column,
+                    gap: Size::all(Val::Px(4.0)),
+                    ..default()
+                },
+                background_color: Color::BLACK.into(),
+                ..default()
+            },
+            IntroMenuRoot,
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                text: Text::from_sections(text),
+                ..Default::default()
+            });
+            let continue_button = MenuButton {
+                event: Some(MenuEvent::Continue),
+                ..Default::default()
+            };
+            add_menu_button(parent, &assets_server, "CONTINUE", continue_button);
+        });
+}
+
+fn cleanup_intro_menu(mut commands: Commands, query: Query<Entity, With<IntroMenuRoot>>) {
+    for e in &query {
+        commands.entity(e).despawn_recursive();
+    }
+}
+
 fn handle_button_interaction(
     mut query: Query<(&Interaction, &MenuButton, &mut BackgroundColor), Changed<Interaction>>,
     mut writer: EventWriter<MenuEvent>,
@@ -233,6 +317,11 @@ fn process_menu_event(
             MenuEvent::Settings => debug!("MenuEvent::Settings recieved"),
             MenuEvent::Start => {
                 if current_state.0 == GameState::MainMenu {
+                    next_state.set(GameState::Intro)
+                }
+            }
+            MenuEvent::Continue => {
+                if current_state.0 == GameState::Intro {
                     next_state.set(GameState::InGame)
                 }
             }
@@ -261,11 +350,17 @@ fn handle_menu_input(
     let action_state = query.single();
     if action_state.just_pressed(crate::input::MenuAction::Menu) {
         match current_state.0 {
-            GameState::InGame => next_state.set(GameState::Paused),
             GameState::MainMenu => {
                 // Do nothing
                 // TODO: maybe exit the game?
             }
+            GameState::Intro => {
+                // Do nothing
+                // TODO: go back to the main menu
+                // have to figure out how to initialize stuff when
+                // we actually start the game
+            }
+            GameState::InGame => next_state.set(GameState::Paused),
             GameState::Paused => next_state.set(GameState::InGame),
         }
     }
@@ -296,6 +391,8 @@ impl Plugin for MenuPlugin {
             .add_system(show_menu.in_schedule(OnEnter(GameState::Paused)))
             .add_system(setup_main_menu.in_schedule(OnEnter(GameState::MainMenu)))
             .add_system(cleanup_main_menu.in_schedule(OnExit(GameState::MainMenu)))
-            .add_system(setup_pause_menu.in_schedule(OnExit(GameState::MainMenu)));
+            .add_system(setup_intro_menu.in_schedule(OnEnter(GameState::Intro)))
+            .add_system(cleanup_intro_menu.in_schedule(OnExit(GameState::Intro)))
+            .add_system(setup_pause_menu.in_schedule(OnExit(GameState::Intro)));
     }
 }
