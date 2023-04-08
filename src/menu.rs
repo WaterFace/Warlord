@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{app::AppExit, prelude::*};
 use leafwing_input_manager::{prelude::ActionState, InputManagerBundle};
 
 use crate::{input::default_menu_input_map, state::GameState};
@@ -33,7 +33,7 @@ pub enum MenuEvent {
 
 const BASE_COLOR: Color = Color::GRAY;
 const HOVER_COLOR: Color = Color::DARK_GRAY;
-const PRESSED_COLOR: Color = Color::OLIVE;
+const PRESSED_COLOR: Color = Color::ORANGE_RED;
 const TEXT_COLOR: Color = Color::WHITE;
 
 const FONT_HEIGHT: f32 = 50.0;
@@ -86,7 +86,7 @@ fn add_menu_button(
 #[derive(Component)]
 struct MenuRoot;
 
-fn setup_menu_buttons(mut commands: Commands, assets_server: Res<AssetServer>) {
+fn setup_pause_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     commands
         .spawn((
             NodeBundle {
@@ -98,12 +98,69 @@ fn setup_menu_buttons(mut commands: Commands, assets_server: Res<AssetServer>) {
                     gap: Size::all(Val::Px(4.0)),
                     ..default()
                 },
-                background_color: Color::rgba(0.9, 0.9, 0.9, 0.5).into(),
+                background_color: Color::rgba(0.4, 0.4, 0.4, 0.5).into(),
                 ..default()
             },
             MenuRoot,
         ))
         .with_children(|parent| {
+            let resume_button = MenuButton {
+                event: Some(MenuEvent::Resume),
+                ..Default::default()
+            };
+            add_menu_button(parent, &assets_server, "RESUME", resume_button);
+            let settings_button = MenuButton {
+                event: Some(MenuEvent::Settings),
+                ..Default::default()
+            };
+            add_menu_button(parent, &assets_server, "SETTINGS", settings_button);
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let exit_button = MenuButton {
+                    event: Some(MenuEvent::Exit),
+                    hover_color: Color::RED,
+                    pressed_color: Color::ORANGE_RED,
+                    ..Default::default()
+                };
+                add_menu_button(parent, &assets_server, "QUIT", exit_button);
+            }
+        });
+}
+
+#[derive(Component)]
+struct MainMenuRoot;
+
+fn setup_main_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
+    let font = assets_server.load("font/BebasNeueRegular.otf");
+
+    commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::width(Val::Percent(100.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    flex_direction: FlexDirection::Column,
+                    gap: Size::all(Val::Px(4.0)),
+                    ..default()
+                },
+                background_color: Color::BLACK.into(),
+                ..default()
+            },
+            MainMenuRoot,
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                text: Text::from_section(
+                    "WARLORD",
+                    TextStyle {
+                        font: font.clone(),
+                        font_size: 120.0,
+                        color: Color::ORANGE_RED,
+                    },
+                ),
+                ..Default::default()
+            });
             let start_button = MenuButton {
                 event: Some(MenuEvent::Start),
                 ..Default::default()
@@ -114,14 +171,23 @@ fn setup_menu_buttons(mut commands: Commands, assets_server: Res<AssetServer>) {
                 ..Default::default()
             };
             add_menu_button(parent, &assets_server, "SETTINGS", settings_button);
-            let exit_button = MenuButton {
-                event: Some(MenuEvent::Exit),
-                hover_color: Color::RED,
-                pressed_color: Color::ORANGE_RED,
-                ..Default::default()
-            };
-            add_menu_button(parent, &assets_server, "QUIT", exit_button);
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let exit_button = MenuButton {
+                    event: Some(MenuEvent::Exit),
+                    hover_color: Color::RED,
+                    pressed_color: Color::BLACK,
+                    ..Default::default()
+                };
+                add_menu_button(parent, &assets_server, "QUIT", exit_button);
+            }
         });
+}
+
+fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuRoot>>) {
+    for e in &query {
+        commands.entity(e).despawn_recursive();
+    }
 }
 
 fn handle_button_interaction(
@@ -146,9 +212,31 @@ fn handle_button_interaction(
     }
 }
 
-fn process_menu_event(mut reader: EventReader<MenuEvent>) {
+fn process_menu_event(
+    mut reader: EventReader<MenuEvent>,
+    current_state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut exit: EventWriter<AppExit>,
+) {
     for ev in reader.iter() {
-        debug!("Recieved {ev:?} event");
+        match ev {
+            MenuEvent::Exit => {
+                info!("Goodbye!");
+                // TODO: ask for confirmation
+                exit.send(AppExit)
+            }
+            MenuEvent::Resume => {
+                if current_state.0 == GameState::Paused {
+                    next_state.set(GameState::InGame)
+                }
+            }
+            MenuEvent::Settings => debug!("MenuEvent::Settings recieved"),
+            MenuEvent::Start => {
+                if current_state.0 == GameState::MainMenu {
+                    next_state.set(GameState::InGame)
+                }
+            }
+        }
     }
 }
 
@@ -201,11 +289,13 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MenuEvent>()
             .add_startup_system(setup_menu_controller)
-            .add_startup_system(setup_menu_buttons)
             .add_system(handle_button_interaction)
             .add_system(process_menu_event)
             .add_system(handle_menu_input)
             .add_system(hide_menu.in_schedule(OnEnter(GameState::InGame)))
-            .add_system(show_menu.in_schedule(OnEnter(GameState::Paused)));
+            .add_system(show_menu.in_schedule(OnEnter(GameState::Paused)))
+            .add_system(setup_main_menu.in_schedule(OnEnter(GameState::MainMenu)))
+            .add_system(cleanup_main_menu.in_schedule(OnExit(GameState::MainMenu)))
+            .add_system(setup_pause_menu.in_schedule(OnExit(GameState::MainMenu)));
     }
 }

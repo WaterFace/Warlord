@@ -93,13 +93,12 @@ fn update_heat_bar(
 
 fn reposition_heat_bar(
     mut heat_bar_query: Query<&mut Transform, (With<HeatBarAnchor>, Without<CustomUICamera>)>,
-    ui_camera: Query<&Camera, (Changed<Camera>, With<CustomUICamera>)>,
+    ui_camera: Query<&Camera, With<CustomUICamera>>,
 ) {
     let Ok(ui_camera) = ui_camera.get_single() else {return;};
     let Some((top_left, _)) = ui_camera.logical_viewport_rect() else {return;};
     let Some(size) = ui_camera.logical_viewport_size() else {return;};
     let top_left = top_left + Vec2::new(-size.x / 2.0, size.y / 2.0);
-    debug!("top left = {}", top_left);
     for mut transform in &mut heat_bar_query {
         transform.translation.x = top_left.x;
         transform.translation.y = top_left.y - BAR_PADDING;
@@ -153,7 +152,7 @@ fn update_reagent_bar(
 
 fn reposition_reagent_bar(
     mut reagent_bar_query: Query<(&mut Transform, &ReagentBarAnchor), Without<CustomUICamera>>,
-    ui_camera: Query<&Camera, (Changed<Camera>, With<CustomUICamera>)>,
+    ui_camera: Query<&Camera, With<CustomUICamera>>,
 ) {
     let Ok(ui_camera) = ui_camera.get_single() else {return;};
     let Some((top_left, _)) = ui_camera.logical_viewport_rect() else {return;};
@@ -298,17 +297,17 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_ui_camera)
-            .add_system(setup_heat_display)
-            .add_systems((reposition_heat_bar, reposition_reagent_bar))
-            .add_systems(
-                (
-                    update_heat_bar,
-                    setup_reagent_bars,
-                    update_reagent_bar,
-                    update_reagent_bar_visibility,
-                )
-                    .in_set(OnUpdate(GameState::InGame)),
-            );
+        app.add_startup_system(setup_ui_camera).add_systems(
+            (
+                setup_heat_display,
+                reposition_heat_bar,
+                reposition_reagent_bar,
+                update_heat_bar,
+                setup_reagent_bars,
+                update_reagent_bar,
+                update_reagent_bar_visibility,
+            )
+                .in_set(OnUpdate(GameState::InGame)),
+        );
     }
 }
