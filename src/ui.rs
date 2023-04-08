@@ -19,26 +19,39 @@ use crate::{
 #[derive(Component, Debug, Default)]
 pub struct CustomUICamera;
 
-fn setup_ui_camera(mut commands: Commands) {
-    commands.spawn((
-        Camera2dBundle {
-            camera_2d: Camera2d {
-                clear_color: ClearColorConfig::None,
-            },
-            camera: Camera {
-                order: 2, // Main camera has order 0 by default, higher orders render after (on top) of that
-                output_mode: CameraOutputMode::Write {
-                    // Gotta do this stuff to not clear the previous camera's work
-                    blend_state: Some(BlendState::ALPHA_BLENDING),
-                    color_attachment_load_op: LoadOp::Load,
+#[derive(Bundle)]
+pub struct CustomUICameraBundle {
+    pub custom_ui_camera: CustomUICamera,
+    pub render_layers: RenderLayers,
+    pub camera2d_bundle: Camera2dBundle,
+}
+
+impl Default for CustomUICameraBundle {
+    fn default() -> Self {
+        CustomUICameraBundle {
+            custom_ui_camera: CustomUICamera,
+            render_layers: RenderLayers::layer(1),
+            camera2d_bundle: Camera2dBundle {
+                camera_2d: Camera2d {
+                    clear_color: ClearColorConfig::None,
+                },
+                camera: Camera {
+                    order: 2, // Main camera has order 0 by default, higher orders render after (on top) of that
+                    output_mode: CameraOutputMode::Write {
+                        // Gotta do this stuff to not clear the previous camera's work
+                        blend_state: Some(BlendState::ALPHA_BLENDING),
+                        color_attachment_load_op: LoadOp::Load,
+                    },
+                    ..Default::default()
                 },
                 ..Default::default()
             },
-            ..Default::default()
-        },
-        RenderLayers::layer(1), // 0 is the main layer, 1 is the ui layer
-        CustomUICamera,
-    ));
+        }
+    }
+}
+
+fn setup_ui_camera(mut commands: Commands) {
+    commands.spawn(CustomUICameraBundle::default());
 }
 
 #[derive(Component, Debug, Default)]
@@ -187,6 +200,7 @@ fn setup_ui_bar<T: Component, U: Component>(
                 ..Default::default()
             },
             anchor_component,
+            RenderLayers::layer(1),
         ))
         .with_children(|parent| {
             parent.spawn((
