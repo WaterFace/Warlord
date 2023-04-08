@@ -3,13 +3,12 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 use bevy::utils::Duration;
 use bevy_rapier2d::prelude::{Collider, CollisionEvent, RigidBody, Velocity};
-use rand::distributions::uniform::SampleUniform;
-use rand::Rng;
 
 use crate::camera::MainCamera;
 use crate::collectible::{Collectible, CollectibleBundle, MineralAppearance};
 use crate::inventory::Reagent;
 use crate::state::GameState;
+use crate::util::{random_direction, random_range};
 use crate::weapon::Slug;
 
 #[derive(Component, Debug, Default)]
@@ -114,20 +113,6 @@ fn cull_far_away_entities(
             debug!("Despawned entity {e:?}");
         }
     }
-}
-
-fn random_direction() -> Vec2 {
-    let mut rng = rand::thread_rng();
-    let mut dir = Vec2::ZERO;
-    while dir.length_squared() == 0.0 {
-        dir = Vec2::new(rng.gen_range(-1.0..=1.0), rng.gen_range(-1.0..=1.0));
-    }
-    dir.normalize()
-}
-
-fn random_range<T: SampleUniform + PartialOrd>(min: T, max: T) -> T {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(min..=max)
 }
 
 fn spawn_rocks_tick(
