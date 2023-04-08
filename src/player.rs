@@ -85,11 +85,8 @@ fn rotate_player(
     other_window_query: Query<&Window, Without<PrimaryWindow>>,
     time: Res<Time>,
 ) {
-    let (main_camera, camera_transform) = camera_query.single();
-    let Ok((mut player, mut focus_point, player_transform)) = query.get_single_mut() else {
-        info!("get_single_mut didn't find exactly 1!");
-        return;
-    };
+    let Ok((main_camera, camera_transform)) = camera_query.get_single() else { return };
+    let Ok((mut player, mut focus_point, player_transform)) = query.get_single_mut() else { return };
 
     let Some(window) = (match main_camera.target {
         RenderTarget::Window(window_ref) => match window_ref {

@@ -99,7 +99,7 @@ fn cull_far_away_entities(
     camera_query: Query<&GlobalTransform, With<MainCamera>>,
     mut rock_limit: ResMut<RockLimit>,
 ) {
-    let main_camera = camera_query.single();
+    let Ok(main_camera) = camera_query.get_single() else { return; };
     for (e, cull, transform, rock) in &query {
         let dist2 = Vec2::distance_squared(
             transform.translation().truncate(),
@@ -121,7 +121,7 @@ fn spawn_rocks_tick(
     time: Res<Time>,
     mut writer: EventWriter<SpawnEvent>,
 ) {
-    let main_camera = camera_query.single();
+    let Ok(main_camera) = camera_query.get_single() else { return; };
     for mut spawner in &mut query {
         spawner
             .spawn_timer

@@ -199,7 +199,7 @@ fn update_starfield_camera_position(
     >,
     mut starfields: ResMut<Assets<StarfieldMaterial>>,
 ) {
-    let main_camera = main_camera_query.single();
+    let Ok(main_camera) = main_camera_query.get_single() else { return; };
     for mut starfield in starfields.iter_mut() {
         starfield.1.camera_position = main_camera.translation().truncate();
     }
