@@ -357,7 +357,7 @@ impl Plugin for RockPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RockLimit::default()) // TODO: make the limit configurable from outside the plugin
             .add_startup_system(setup_rock_appearance)
-            .add_startup_system(spawn_first_cluster)
+            .add_system(spawn_first_cluster.in_schedule(OnExit(GameState::Intro)))
             .add_event::<SpawnEvent>()
             .add_event::<RockDestroyed>()
             .add_systems(
