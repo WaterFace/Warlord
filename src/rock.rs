@@ -51,8 +51,8 @@ struct SpawnEvent {
 }
 
 #[derive(Component, Default, Debug)]
-struct RotatingRock {
-    angvel: Vec3,
+pub struct RotatingRock {
+    pub angvel: Vec3,
 }
 
 fn rotate_rocks(mut query: Query<(&mut Transform, &RotatingRock)>, time: Res<Time>) {

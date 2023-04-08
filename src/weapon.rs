@@ -4,7 +4,16 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::{heat::Heat, player::Player, state::GameState};
+use crate::{
+    collectible::{Collectible, CollectibleBundle, ExoticMatter, ExoticMatterAppearance},
+    heat::Heat,
+    input::Action,
+    inventory::{Inventory, Reagent},
+    player::Player,
+    rock::RotatingRock,
+    state::GameState,
+    util::{random_direction, random_range},
+};
 
 #[derive(Component, Debug)]
 pub struct MainGun {
@@ -186,6 +195,66 @@ fn fire_main_gun(
     }
 }
 
+fn dump_cargo(
+    mut commands: Commands,
+    mut query: Query<(
+        &Player,
+        &Transform,
+        &Velocity,
+        &mut Inventory,
+        &ActionState<Action>,
+    )>,
+    exotic_matter_appearance: Res<ExoticMatterAppearance>,
+) {
+    for (player, transform, velocity, mut inventory, action_state) in &mut query {
+        if !action_state.just_pressed(Action::DumpCargo) {
+            continue;
+        }
+
+        let amount = inventory.reagent(Reagent::Exotic).current();
+        let num_chunks = amount as u32;
+        let facing_dir = Vec2::from_angle(player.facing);
+        let pos = transform.translation.truncate() + facing_dir * 3.0;
+        if num_chunks > 0 {
+            let amount_per_chunk = amount / num_chunks as f32;
+            inventory.reagent_mut(Reagent::Exotic).add(-amount);
+
+            for _ in 0..num_chunks {
+                let linvel = facing_dir * 3.0 + velocity.linvel + random_direction() * 1.5;
+                let angvel = Vec3::new(
+                    random_range(-PI, PI),
+                    random_range(-PI, PI),
+                    random_range(-PI, PI),
+                );
+                commands
+                    .spawn((
+                        CollectibleBundle {
+                            transform: Transform::from_xyz(pos.x, pos.y, transform.translation.z),
+                            velocity: Velocity::linear(linvel),
+                            collectible: Collectible::CollectibleReagent {
+                                reagent: Reagent::Exotic,
+                                amount: amount_per_chunk,
+                            },
+                            ..Default::default()
+                        },
+                        ExoticMatter::default(),
+                    ))
+                    .with_children(|parent| {
+                        parent.spawn((
+                            RotatingRock { angvel },
+                            PbrBundle {
+                                mesh: exotic_matter_appearance.mesh.clone(),
+                                material: exotic_matter_appearance.material.clone(),
+                                visibility: Visibility::Visible,
+                                ..Default::default()
+                            },
+                        ));
+                    });
+            }
+        }
+    }
+}
+
 pub struct WeaponPlugin;
 
 impl Plugin for WeaponPlugin {
@@ -202,6 +271,7 @@ impl Plugin for WeaponPlugin {
                 (tick_gun_timer, fire_main_gun)
                     .chain()
                     .in_set(OnUpdate(GameState::InGame)),
-            );
+            )
+            .add_system(dump_cargo.in_set(OnUpdate(GameState::InGame)));
     }
 }

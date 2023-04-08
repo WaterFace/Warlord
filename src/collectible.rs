@@ -155,6 +155,47 @@ fn setup_mineral_visuals(
     commands.insert_resource(MineralAppearance { material, mesh });
 }
 
+#[derive(Component, Debug, Default)]
+pub struct ExoticMatter {
+    pub value: f32,
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct ExoticMatterAppearance {
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<StandardMaterial>,
+}
+
+fn setup_exotic_matter_visuals(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let material = materials.add(StandardMaterial {
+        base_color: Color::rgb(1.0, 0.0, 1.0),
+        emissive: Color::rgb(1.0, 0.0, 1.0) * 3.0,
+        ..Default::default()
+    });
+
+    let mesh = meshes.add(
+        shape::Torus {
+            radius: 0.5,
+            ring_radius: 0.25,
+            subdivisions_segments: 16,
+            subdivisions_sides: 12,
+        }
+        .into(),
+    );
+
+    commands.insert_resource(ExoticMatterAppearance { material, mesh });
+}
+
+fn exotic_matter_friction(mut query: Query<&mut Velocity, With<ExoticMatter>>, time: Res<Time>) {
+    for mut velocity in &mut query {
+        velocity.linvel *= f32::powf(0.5, time.delta_seconds());
+    }
+}
+
 fn handle_collision(
     mut commands: Commands,
     mut collisions: EventReader<CollisionEvent>,
@@ -203,7 +244,10 @@ pub struct CollectiblePlugin;
 impl Plugin for CollectiblePlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_mineral_visuals)
-            .add_system(handle_collision.in_set(OnUpdate(GameState::InGame)))
+            .add_startup_system(setup_exotic_matter_visuals)
+            .add_systems(
+                (handle_collision, exotic_matter_friction).in_set(OnUpdate(GameState::InGame)),
+            )
             .add_event::<CollectionEvent>();
     }
 }
