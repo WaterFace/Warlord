@@ -9,6 +9,7 @@ use rand::Rng;
 use crate::camera::MainCamera;
 use crate::collectible::{Collectible, CollectibleBundle, MineralAppearance};
 use crate::inventory::Reagent;
+use crate::state::GameState;
 use crate::weapon::Slug;
 
 #[derive(Component, Debug, Default)]
@@ -363,11 +364,13 @@ impl Plugin for RockPlugin {
             .add_startup_system(spawn_first_cluster)
             .add_event::<SpawnEvent>()
             .add_event::<RockDestroyed>()
-            .add_system(spawn_rocks_tick)
-            .add_system(spawn_rocks)
-            .add_system(cull_far_away_entities)
-            .add_system(rotate_rocks)
-            .add_system(handle_projectile_collisions)
-            .add_system(handle_destruction_event);
+            .add_systems((
+                spawn_rocks_tick,
+                spawn_rocks,
+                cull_far_away_entities,
+                rotate_rocks,
+                handle_projectile_collisions,
+                handle_destruction_event,
+            ).in_set(OnUpdate(GameState::InGame)));
     }
 }

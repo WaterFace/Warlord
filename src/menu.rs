@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use leafwing_input_manager::{prelude::ActionState, InputManagerBundle};
+
+use crate::{input::default_menu_input_map, state::GameState};
 
 #[derive(Component, Debug)]
 pub struct MenuButton {
@@ -80,20 +83,26 @@ fn add_menu_button(
         });
 }
 
+#[derive(Component)]
+struct MenuRoot;
+
 fn setup_menu_buttons(mut commands: Commands, assets_server: Res<AssetServer>) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                size: Size::width(Val::Percent(100.0)),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                flex_direction: FlexDirection::Column,
-                gap: Size::all(Val::Px(4.0)),
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::width(Val::Percent(100.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    flex_direction: FlexDirection::Column,
+                    gap: Size::all(Val::Px(4.0)),
+                    ..default()
+                },
+                background_color: Color::rgba(0.9, 0.9, 0.9, 0.5).into(),
                 ..default()
             },
-            background_color: Color::rgba(0.9, 0.9, 0.9, 0.5).into(),
-            ..default()
-        })
+            MenuRoot,
+        ))
         .with_children(|parent| {
             let start_button = MenuButton {
                 event: Some(MenuEvent::Start),
@@ -143,13 +152,60 @@ fn process_menu_event(mut reader: EventReader<MenuEvent>) {
     }
 }
 
+#[derive(Component)]
+struct MenuController;
+
+fn setup_menu_controller(mut commands: Commands) {
+    commands.spawn((
+        InputManagerBundle {
+            action_state: ActionState::default(),
+            input_map: default_menu_input_map(),
+        },
+        MenuController,
+    ));
+}
+
+fn handle_menu_input(
+    query: Query<&ActionState<crate::input::MenuAction>, With<MenuController>>,
+    current_state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    let action_state = query.single();
+    if action_state.just_pressed(crate::input::MenuAction::Menu) {
+        match current_state.0 {
+            GameState::InGame => next_state.set(GameState::Paused),
+            GameState::MainMenu => {
+                // Do nothing
+                // TODO: maybe exit the game?
+            }
+            GameState::Paused => next_state.set(GameState::InGame),
+        }
+    }
+}
+
+fn hide_menu(mut query: Query<&mut Visibility, With<MenuRoot>>) {
+    for mut visibility in &mut query {
+        *visibility = Visibility::Hidden;
+    }
+}
+
+fn show_menu(mut query: Query<&mut Visibility, With<MenuRoot>>) {
+    for mut visibility in &mut query {
+        *visibility = Visibility::Visible;
+    }
+}
+
 pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MenuEvent>()
+            .add_startup_system(setup_menu_controller)
             .add_startup_system(setup_menu_buttons)
             .add_system(handle_button_interaction)
-            .add_system(process_menu_event);
+            .add_system(process_menu_event)
+            .add_system(handle_menu_input)
+            .add_system(hide_menu.in_schedule(OnEnter(GameState::InGame)))
+            .add_system(show_menu.in_schedule(OnEnter(GameState::Paused)));
     }
 }

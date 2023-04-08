@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
-use crate::{heat::Heat, player::Player};
+use crate::{heat::Heat, player::Player, state::GameState};
 
 #[derive(Component, Debug)]
 pub struct MainGun {
@@ -167,7 +167,15 @@ pub struct WeaponPlugin;
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_slug)
-            .add_systems((tick_slug, kill_slug).chain())
-            .add_systems((tick_gun_timer, fire_main_gun).chain());
+            .add_systems(
+                (tick_slug, kill_slug)
+                    .chain()
+                    .in_set(OnUpdate(GameState::InGame)),
+            )
+            .add_systems(
+                (tick_gun_timer, fire_main_gun)
+                    .chain()
+                    .in_set(OnUpdate(GameState::InGame)),
+            );
     }
 }

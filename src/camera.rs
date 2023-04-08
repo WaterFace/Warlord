@@ -6,6 +6,8 @@ use bevy::{
     render::camera::{CameraRenderGraph, ScalingMode},
 };
 
+use crate::state::GameState;
+
 #[derive(Component, Debug, Default)]
 pub struct MainCamera;
 
@@ -132,6 +134,6 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(follow_target);
+        app.add_system(follow_target.in_set(OnUpdate(GameState::InGame)));
     }
 }

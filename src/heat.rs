@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
+use crate::state::GameState;
+
 #[derive(Component, Debug)]
 #[allow(dead_code)]
 pub struct Heat {
@@ -22,6 +24,9 @@ impl Heat {
     }
     pub fn fraction(&self) -> f32 {
         self.current / self.limit
+    }
+    pub fn reaction_threshold(&self) -> f32 {
+        self.reaction_threshold
     }
     pub fn can_react(&self) -> bool {
         self.current > self.reaction_threshold
@@ -62,6 +67,6 @@ pub struct HeatPlugin;
 
 impl Plugin for HeatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(tick_heat);
+        app.add_system(tick_heat.in_set(OnUpdate(GameState::InGame)));
     }
 }

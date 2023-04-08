@@ -25,10 +25,20 @@ pub fn default_input_map() -> InputMap<Action> {
     ])
 }
 
+#[derive(Actionlike, Debug, PartialEq, Clone, Copy, Hash)]
+pub enum MenuAction {
+    Menu,
+}
+
+pub fn default_menu_input_map() -> InputMap<MenuAction> {
+    InputMap::new([(InputKind::Keyboard(KeyCode::Escape), MenuAction::Menu)])
+}
+
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(InputManagerPlugin::<Action>::default());
+        app.add_plugin(InputManagerPlugin::<Action>::default())
+            .add_plugin(InputManagerPlugin::<MenuAction>::default());
     }
 }

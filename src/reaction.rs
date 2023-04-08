@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     heat::Heat,
     inventory::{Inventory, Reagent, ReagentEvent},
+    state::GameState,
 };
 
 #[derive(Debug)]
@@ -124,6 +125,6 @@ pub struct ReactionPlugin;
 impl Plugin for ReactionPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_reactions)
-            .add_system(perform_reactions);
+            .add_system(perform_reactions.in_set(OnUpdate(GameState::InGame)));
     }
 }

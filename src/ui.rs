@@ -14,6 +14,7 @@ use crate::{
     heat::Heat,
     inventory::{Inventory, Reagent},
     player::Player,
+    state::GameState,
 };
 
 #[derive(Component, Debug, Default)]
@@ -62,7 +63,12 @@ struct CurrentHeatBar {
 #[derive(Component, Debug, Default)]
 struct HeatBarAnchor;
 
-fn setup_heat_display(mut commands: Commands, assets_server: Res<AssetServer>) {
+fn setup_heat_display(
+    mut commands: Commands,
+    assets_server: Res<AssetServer>,
+    heat_query: Query<&Heat, Added<Heat>>,
+) {
+    let Ok(heat) = heat_query.get_single() else { return; };
     setup_ui_bar(
         &mut commands,
         &assets_server,
@@ -71,7 +77,7 @@ fn setup_heat_display(mut commands: Commands, assets_server: Res<AssetServer>) {
         "HEAT",
         Color::RED,
         Color::WHITE,
-        Some(0.75), // TODO: hook this up so it matches with the real threshold
+        Some(heat.reaction_threshold() / heat.limit()),
     );
 }
 
@@ -293,12 +299,16 @@ pub struct UIPlugin;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_ui_camera)
-            .add_startup_system(setup_heat_display)
-            .add_system(update_heat_bar)
-            .add_system(reposition_heat_bar)
-            .add_system(setup_reagent_bars)
-            .add_system(update_reagent_bar)
-            .add_system(reposition_reagent_bar)
-            .add_system(update_reagent_bar_visibility);
+            .add_system(setup_heat_display)
+            .add_systems((reposition_heat_bar, reposition_reagent_bar))
+            .add_systems(
+                (
+                    update_heat_bar,
+                    setup_reagent_bars,
+                    update_reagent_bar,
+                    update_reagent_bar_visibility,
+                )
+                    .in_set(OnUpdate(GameState::InGame)),
+            );
     }
 }

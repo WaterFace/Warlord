@@ -12,6 +12,7 @@ use crate::{
     camera::{FocusPoint, MainCamera},
     heat::Heat,
     inventory::Inventory,
+    state::GameState,
     weapon::MainGun,
 };
 
@@ -325,9 +326,18 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_player_model_handles)
-            .add_systems((rotate_player, player_friction, move_player).chain())
-            .add_system(setup_player_model)
-            .add_system(rotate_player_model)
-            .add_system(player_model_heat_effect);
+            .add_systems(
+                (rotate_player, player_friction, move_player)
+                    .chain()
+                    .in_set(OnUpdate(GameState::InGame)),
+            )
+            .add_systems(
+                (
+                    setup_player_model,
+                    rotate_player_model,
+                    player_model_heat_effect,
+                )
+                    .in_set(OnUpdate(GameState::InGame)),
+            );
     }
 }

@@ -16,6 +16,7 @@ mod player;
 mod reaction;
 mod rock;
 mod starfield_shader;
+mod state;
 mod ui;
 mod weapon;
 
@@ -80,7 +81,8 @@ fn main() {
                 ..Default::default()
             }),
     );
-    app.add_plugin(physics::PhysicsPlugin { debug: false })
+    app.add_plugin(state::StatePlugin)
+        .add_plugin(physics::PhysicsPlugin { debug: false })
         .add_plugin(starfield_shader::StarfieldShaderPlugin)
         .add_plugin(player::PlayerPlugin)
         .add_plugin(camera::CameraPlugin)

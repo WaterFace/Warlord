@@ -14,7 +14,7 @@ use bevy::{
 };
 use noisy_bevy::NoisyShaderPlugin;
 
-use crate::camera::MainCamera;
+use crate::{camera::MainCamera, state::GameState};
 
 #[derive(Component, Debug, Default)]
 pub struct StarfieldMesh;
@@ -211,7 +211,9 @@ impl Plugin for StarfieldShaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(NoisyShaderPlugin)
             .add_plugin(MaterialPlugin::<StarfieldMaterial>::default())
-            .add_system(update_starfield_on_resize)
-            .add_system(update_starfield_camera_position);
+            .add_systems(
+                (update_starfield_on_resize, update_starfield_camera_position)
+                    .in_set(OnUpdate(GameState::InGame)),
+            );
     }
 }

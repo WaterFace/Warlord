@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::{inventory::Reagent, player::Player, rock::Cull};
+use crate::{inventory::Reagent, player::Player, rock::Cull, state::GameState};
 
 #[derive(Component, Debug)]
 pub enum Collectible {
@@ -203,7 +203,7 @@ pub struct CollectiblePlugin;
 impl Plugin for CollectiblePlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_mineral_visuals)
-            .add_system(handle_collision)
+            .add_system(handle_collision.in_set(OnUpdate(GameState::InGame)))
             .add_event::<CollectionEvent>();
     }
 }

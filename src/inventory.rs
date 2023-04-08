@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::collectible::CollectionEvent;
+use crate::{collectible::CollectionEvent, state::GameState};
 
 // KEEP THIS UPDATED:
 pub const REAGENT_TYPES: usize = 2;
@@ -138,8 +138,8 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ReagentEvent>()
-            .add_system(handle_collection_event)
-            .add_system(set_visibility);
+        app.add_event::<ReagentEvent>().add_systems(
+            (handle_collection_event, set_visibility).in_set(OnUpdate(GameState::InGame)),
+        );
     }
 }
