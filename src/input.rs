@@ -8,7 +8,7 @@ pub enum Action {
     MoveLeft,
     MoveRight,
     FireMainGun,
-    FireTorpedo,
+    Shield,
     DumpCargo,
 }
 
@@ -19,7 +19,7 @@ pub fn default_input_map() -> InputMap<Action> {
         (InputKind::Keyboard(KeyCode::A), Action::MoveLeft),
         (InputKind::Keyboard(KeyCode::D), Action::MoveRight),
         (InputKind::Mouse(MouseButton::Left), Action::FireMainGun),
-        (InputKind::Mouse(MouseButton::Right), Action::FireTorpedo),
+        (InputKind::Mouse(MouseButton::Right), Action::Shield),
         (InputKind::Keyboard(KeyCode::F), Action::DumpCargo),
         // TODO: add gamepad inputs
     ])

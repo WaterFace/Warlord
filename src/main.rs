@@ -16,6 +16,7 @@ mod physics;
 mod player;
 mod reaction;
 mod rock;
+mod shield;
 mod starfield_shader;
 mod state;
 mod ui;
@@ -98,6 +99,7 @@ fn main() {
         .add_plugin(input::InputPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(particles::ParticlePlugin)
+        .add_plugin(shield::ShieldPlugin)
         .add_startup_system(setup)
         .run();
 }
