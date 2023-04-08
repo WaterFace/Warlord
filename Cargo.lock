@@ -626,25 +626,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_particle_systems"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49a2dd7362522d3f0b61bb72ca96c6ba9902ce46be61aa4ad62a2909f9fa3670"
-dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_ecs",
- "bevy_hierarchy",
- "bevy_math",
- "bevy_reflect",
- "bevy_render",
- "bevy_sprite",
- "bevy_time",
- "bevy_transform",
- "rand",
-]
-
-[[package]]
 name = "bevy_pbr"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3313,7 +3294,6 @@ name = "warlord"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_particle_systems",
  "bevy_rapier2d",
  "bytemuck",
  "leafwing-input-manager",
