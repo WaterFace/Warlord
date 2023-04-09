@@ -164,8 +164,6 @@ fn spawn_rocks(
         if number_of_rocks + rock_limit.current > rock_limit.limit {
             debug!("Couldn't spawn {} rocks. There are currently {} rocks and that would exceed the limit of {}", number_of_rocks, rock_limit.current, rock_limit.limit);
             return;
-        } else {
-            rock_limit.current += number_of_rocks;
         }
         for _ in 0..*number_of_rocks {
             // Rocks are 1x1 cubes, so the total area of the rocks to be spawned is about
@@ -202,6 +200,7 @@ fn spawn_rocks(
             );
             let roll = random_range(0.0, 1.0);
             if roll > *chance_of_mineral {
+                rock_limit.current += 1;
                 let rock_visuals = commands
                     .spawn((
                         RotatingRock { angvel },
@@ -312,10 +311,12 @@ fn handle_destruction_event(
     mut reader: EventReader<RockDestroyed>,
     rock_query: Query<&Transform, With<Rock>>,
     mineral_appearance: Res<MineralAppearance>,
+    mut rock_limit: ResMut<RockLimit>,
 ) {
     for ev in reader.iter() {
         let Ok(rock_transform) = rock_query.get(ev.entity) else { continue; };
         commands.entity(ev.entity).despawn_recursive();
+        rock_limit.current -= 1;
         for _ in 0..3 {
             let transform = Transform::from_translation(rock_transform.translation)
                 .with_scale(Vec3::splat(0.5));
