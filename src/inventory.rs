@@ -9,8 +9,8 @@ pub const REAGENT_TYPES: usize = 4;
 pub enum Reagent {
     Minerals = 0,
     Exotic = 1,
-    Waste = 2,
-    Strange = 3,
+    Strange = 2,
+    Continuum = 3,
 }
 
 impl TryFrom<usize> for Reagent {
@@ -19,8 +19,8 @@ impl TryFrom<usize> for Reagent {
         match value {
             0 => Ok(Self::Minerals),
             1 => Ok(Self::Exotic),
-            2 => Ok(Self::Waste),
-            3 => Ok(Self::Strange),
+            2 => Ok(Self::Strange),
+            3 => Ok(Self::Continuum),
             _ => Err(()),
         }
     }
@@ -121,18 +121,18 @@ impl Default for Inventory {
                 InventoryEntry {
                     current: 0.0,
                     threshold: None,
-                    limit: 5.0,
-                    visible: false,
-                    color: Color::rgb(0.3, 0.1, 0.1),
-                    name: "WASTE".into(),
-                },
-                InventoryEntry {
-                    current: 0.0,
-                    threshold: None,
                     limit: 50.0,
                     visible: false,
                     color: Color::rgb(0.0, 1.0, 0.0),
                     name: "STRANGE MATTER".into(),
+                },
+                InventoryEntry {
+                    current: 0.0,
+                    threshold: None,
+                    limit: 100.0,
+                    visible: false,
+                    color: Color::rgb(1.0, 0.9, 0.1),
+                    name: "CONTINUUM".into(),
                 },
             ],
         }

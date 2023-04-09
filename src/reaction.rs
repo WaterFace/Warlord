@@ -8,11 +8,11 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Reaction {
-    reagent1: Reagent,
-    reagent2: Option<Reagent>,
-    needs_heat: bool,
-    rate: f32,
-    result: Option<Reagent>,
+    pub reagent1: Reagent,
+    pub reagent2: Option<Reagent>,
+    pub needs_heat: bool,
+    pub rate: f32,
+    pub result: Option<Reagent>,
 }
 
 impl Reaction {
@@ -90,26 +90,17 @@ impl Reaction {
 
 #[derive(Resource)]
 pub struct Reactions {
-    reactions: Vec<Reaction>,
+    pub reactions: Vec<Reaction>,
 }
 
 fn setup_reactions(mut commands: Commands) {
-    let reactions = vec![
-        Reaction {
-            reagent1: Reagent::Minerals,
-            reagent2: None,
-            needs_heat: true,
-            rate: 0.5,
-            result: Some(Reagent::Exotic),
-        },
-        // Reaction {
-        //     reagent1: Reagent::Exotic,
-        //     reagent2: None,
-        //     needs_heat: false,
-        //     rate: 0.1,
-        //     result: Some(Reagent::Waste),
-        // },
-    ];
+    let reactions = vec![Reaction {
+        reagent1: Reagent::Minerals,
+        reagent2: None,
+        needs_heat: true,
+        rate: 0.5,
+        result: Some(Reagent::Exotic),
+    }];
 
     commands.insert_resource(Reactions { reactions })
 }

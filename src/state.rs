@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     heat::Heat,
     inventory::{Inventory, Reagent},
+    reaction::{Reaction, Reactions},
     shield::ShieldEmitter,
     weapon::{CargoDumper, MainGun},
 };
@@ -23,7 +24,8 @@ pub enum ProgressStages {
     GunAndHeat,
     CollectExotic,
     ShieldAndStrange,
-    FinalStage, // TODO: rename this and decide what's happening at that point
+    Continuum,
+    End,
 }
 
 fn enter_exploration_stage(mut query: Query<&mut Inventory>) {
@@ -137,7 +139,7 @@ fn update_shield_and_strange_stage(
             "Strange threshold is unset! It should be set here"
         );
         if entry.fraction() >= entry.threshold().unwrap() {
-            stage.set(ProgressStages::FinalStage);
+            stage.set(ProgressStages::Continuum);
         }
     }
 }
@@ -145,6 +147,42 @@ fn update_shield_and_strange_stage(
 fn exit_shield_and_strange_stage(mut query: Query<&mut Inventory>) {
     for mut inventory in &mut query {
         inventory.reagent_mut(Reagent::Strange).set_threshold(None);
+    }
+}
+
+fn enter_continuum_stage(mut query: Query<&mut Inventory>, mut reactions: ResMut<Reactions>) {
+    for mut inventory in &mut query {
+        inventory
+            .reagent_mut(Reagent::Continuum)
+            .set_threshold(Some(0.99));
+    }
+    reactions.reactions.push(Reaction {
+        reagent1: Reagent::Exotic,
+        reagent2: Some(Reagent::Strange),
+        needs_heat: true,
+        rate: 1.0,
+        result: Some(Reagent::Continuum),
+    });
+}
+
+fn update_continuum_stage(query: Query<&Inventory>, mut stage: ResMut<NextState<ProgressStages>>) {
+    for inventory in &query {
+        let entry = inventory.reagent(Reagent::Continuum);
+        debug_assert!(
+            entry.threshold().is_some(),
+            "Continuum threshold is unset! It should be set here"
+        );
+        if entry.fraction() >= entry.threshold().unwrap() {
+            stage.set(ProgressStages::End);
+        }
+    }
+}
+
+fn exit_continuum_stage(mut query: Query<&mut Inventory>) {
+    for mut inventory in &mut query {
+        inventory
+            .reagent_mut(Reagent::Continuum)
+            .set_threshold(None);
     }
 }
 
@@ -177,5 +215,9 @@ impl Plugin for StatePlugin {
         .add_system(
             exit_shield_and_strange_stage.in_schedule(OnExit(ProgressStages::ShieldAndStrange)),
         );
+
+        app.add_system(enter_continuum_stage.in_schedule(OnEnter(ProgressStages::Continuum)))
+            .add_system(update_continuum_stage.in_set(OnUpdate(ProgressStages::Continuum)))
+            .add_system(exit_continuum_stage.in_schedule(OnExit(ProgressStages::Continuum)));
     }
 }
