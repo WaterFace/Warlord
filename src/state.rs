@@ -1,10 +1,13 @@
-use bevy::prelude::*;
+use std::time::Duration;
+
+use bevy::{prelude::*, render::view::RenderLayers, sprite::Anchor};
 
 use crate::{
     heat::Heat,
     inventory::{Inventory, Reagent},
     reaction::{Reaction, Reactions},
     shield::ShieldEmitter,
+    ui::CustomUICamera,
     weapon::{CargoDumper, MainGun},
 };
 
@@ -14,6 +17,8 @@ pub enum GameState {
     MainMenu,
     Intro,
     InGame,
+    Outro,
+    EndScreen,
     Paused,
 }
 
@@ -186,6 +191,62 @@ fn exit_continuum_stage(mut query: Query<&mut Inventory>) {
     }
 }
 
+#[derive(Component, Debug)]
+pub struct FadeOut {
+    timer: Timer,
+}
+
+fn enter_end_stage(mut commands: Commands) {
+    commands.spawn((
+        SpriteBundle {
+            sprite: Sprite {
+                color: Color::WHITE,
+                anchor: Anchor::Center,
+                custom_size: Some(Vec2::new(10.0, 10.0)),
+                ..Default::default()
+            },
+            transform: Transform::from_xyz(0.0, 0.0, 10.0),
+            ..Default::default()
+        },
+        FadeOut {
+            timer: Timer::from_seconds(5.0, TimerMode::Once),
+        },
+        RenderLayers::layer(1), // So the ui camera can see it
+    ));
+}
+
+fn update_end_stage(
+    mut query: Query<(&mut FadeOut, &mut Sprite)>,
+    current_state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    ui_camera: Query<&Camera, With<CustomUICamera>>,
+    time: Res<Time>,
+) {
+    if current_state.0 != GameState::InGame {
+        return;
+    }
+    let Ok(ui_camera) = ui_camera.get_single() else {return;};
+    let Some(size) = ui_camera.logical_viewport_size() else {return;};
+
+    for (mut fadeout, mut sprite) in &mut query {
+        fadeout
+            .timer
+            .tick(Duration::from_secs_f32(time.delta_seconds()));
+        let a = fadeout.timer.percent();
+        sprite.custom_size = Some(size);
+        sprite.color = Color::BLACK.with_a(a);
+        if fadeout.timer.finished() {
+            next_state.set(GameState::Outro);
+        }
+    }
+}
+
+fn exit_end_stage(mut commands: Commands, query: Query<Entity, With<FadeOut>>) {
+    for e in &query {
+        commands.entity(e).despawn_recursive();
+    }
+}
+
 pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
@@ -219,5 +280,9 @@ impl Plugin for StatePlugin {
         app.add_system(enter_continuum_stage.in_schedule(OnEnter(ProgressStages::Continuum)))
             .add_system(update_continuum_stage.in_set(OnUpdate(ProgressStages::Continuum)))
             .add_system(exit_continuum_stage.in_schedule(OnExit(ProgressStages::Continuum)));
+
+        app.add_system(enter_end_stage.in_schedule(OnEnter(ProgressStages::End)))
+            .add_system(update_end_stage.in_set(OnUpdate(ProgressStages::End)))
+            .add_system(exit_end_stage.in_schedule(OnExit(ProgressStages::End)));
     }
 }

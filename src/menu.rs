@@ -1,7 +1,10 @@
 use bevy::{app::AppExit, prelude::*};
 use leafwing_input_manager::{prelude::ActionState, InputManagerBundle};
 
-use crate::{input::default_menu_input_map, state::GameState};
+use crate::{
+    input::default_menu_input_map,
+    state::{GameState, ProgressStages},
+};
 
 #[derive(Component, Debug)]
 pub struct MenuButton {
@@ -30,6 +33,7 @@ pub enum MenuEvent {
     Resume,
     Settings,
     Exit,
+    Restart,
 }
 
 const BASE_COLOR: Color = Color::GRAY;
@@ -85,7 +89,7 @@ fn add_menu_button(
 }
 
 #[derive(Component)]
-struct MenuRoot;
+struct PauseMenuRoot;
 
 fn setup_pause_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     commands
@@ -102,7 +106,7 @@ fn setup_pause_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                 background_color: Color::rgba(0.4, 0.4, 0.4, 0.5).into(),
                 ..default()
             },
-            MenuRoot,
+            PauseMenuRoot,
         ))
         .with_children(|parent| {
             let resume_button = MenuButton {
@@ -126,6 +130,13 @@ fn setup_pause_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                 add_menu_button(parent, &assets_server, "QUIT", exit_button);
             }
         });
+}
+
+fn cleanup_pause_menu(mut commands: Commands, query: Query<Entity, With<PauseMenuRoot>>) {
+    for e in &query {
+        debug!("Cleaned up after pause menu");
+        commands.entity(e).despawn_recursive();
+    }
 }
 
 #[derive(Component)]
@@ -187,12 +198,10 @@ fn setup_main_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
 
 fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuRoot>>) {
     for e in &query {
+        debug!("Cleaned up after main menu");
         commands.entity(e).despawn_recursive();
     }
 }
-
-#[derive(Component)]
-struct IntroMenuRoot;
 
 fn markup_to_text_sections(
     input: &str,
@@ -233,6 +242,9 @@ fn markup_to_text_sections(
     return result;
 }
 
+#[derive(Component)]
+struct IntroMenuRoot;
+
 fn setup_intro_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     let font = assets_server.load("font/BebasNeueRegular.otf");
 
@@ -247,7 +259,7 @@ fn setup_intro_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     flex_direction: FlexDirection::Column,
-                    gap: Size::all(Val::Px(4.0)),
+                    gap: Size::all(Val::Px(15.0)),
                     ..default()
                 },
                 background_color: Color::BLACK.into(),
@@ -270,6 +282,116 @@ fn setup_intro_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
 
 fn cleanup_intro_menu(mut commands: Commands, query: Query<Entity, With<IntroMenuRoot>>) {
     for e in &query {
+        debug!("Cleaned up after intro");
+        commands.entity(e).despawn_recursive();
+    }
+}
+
+#[derive(Component)]
+struct OutroMenuRoot;
+
+fn setup_outro_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
+    let font = assets_server.load("font/BebasNeueRegular.otf");
+
+    let outro = include_str!("outro.txt");
+    let text = markup_to_text_sections(outro, font.clone(), 30.0, Color::ORANGE_RED, TEXT_COLOR);
+
+    commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::width(Val::Percent(100.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    flex_direction: FlexDirection::Column,
+                    gap: Size::all(Val::Px(15.0)),
+                    ..default()
+                },
+                background_color: Color::BLACK.into(),
+                ..default()
+            },
+            OutroMenuRoot,
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                text: Text::from_sections(text),
+                ..Default::default()
+            });
+            let continue_button = MenuButton {
+                event: Some(MenuEvent::Continue),
+                ..Default::default()
+            };
+            add_menu_button(parent, &assets_server, "CONTINUE", continue_button);
+        });
+}
+
+fn cleanup_outro_menu(mut commands: Commands, query: Query<Entity, With<OutroMenuRoot>>) {
+    for e in &query {
+        debug!("Cleaned up after outro");
+        commands.entity(e).despawn_recursive();
+    }
+}
+
+#[derive(Component)]
+struct EndScreenMenuRoot;
+
+fn setup_endscreen_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
+    let font = assets_server.load("font/BebasNeueRegular.otf");
+    commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::width(Val::Percent(100.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    flex_direction: FlexDirection::Column,
+                    gap: Size::all(Val::Px(15.0)),
+                    ..default()
+                },
+                background_color: Color::BLACK.into(),
+                ..default()
+            },
+            EndScreenMenuRoot,
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                text: Text::from_section(
+                    "WARLORD",
+                    TextStyle {
+                        font: font.clone(),
+                        font_size: 120.0,
+                        color: Color::ORANGE_RED,
+                    },
+                ),
+                ..Default::default()
+            });
+            parent.spawn(TextBundle {
+                text: Text::from_section(
+                    "Thank you for playing!",
+                    TextStyle {
+                        font: font.clone(),
+                        font_size: 30.0,
+                        color: Color::ORANGE_RED,
+                    },
+                ),
+                ..Default::default()
+            });
+            let restart_button = MenuButton {
+                event: Some(MenuEvent::Restart),
+                ..Default::default()
+            };
+            add_menu_button(
+                parent,
+                &assets_server,
+                "RETURN TO MAIN MENU",
+                restart_button,
+            );
+        });
+}
+
+fn cleanup_endscreen_menu(mut commands: Commands, query: Query<Entity, With<EndScreenMenuRoot>>) {
+    for e in &query {
+        debug!("Cleaned up after endscreen");
         commands.entity(e).despawn_recursive();
     }
 }
@@ -300,6 +422,7 @@ fn process_menu_event(
     mut reader: EventReader<MenuEvent>,
     current_state: Res<State<GameState>>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut next_game_stage: ResMut<NextState<ProgressStages>>,
     mut exit: EventWriter<AppExit>,
 ) {
     for ev in reader.iter() {
@@ -317,12 +440,20 @@ fn process_menu_event(
             MenuEvent::Settings => debug!("MenuEvent::Settings recieved"),
             MenuEvent::Start => {
                 if current_state.0 == GameState::MainMenu {
-                    next_state.set(GameState::Intro)
+                    next_state.set(GameState::Intro);
+                    next_game_stage.set(ProgressStages::default());
                 }
             }
             MenuEvent::Continue => {
                 if current_state.0 == GameState::Intro {
                     next_state.set(GameState::InGame)
+                } else if current_state.0 == GameState::Outro {
+                    next_state.set(GameState::EndScreen)
+                }
+            }
+            MenuEvent::Restart => {
+                if current_state.0 == GameState::EndScreen {
+                    next_state.set(GameState::MainMenu)
                 }
             }
         }
@@ -352,13 +483,15 @@ fn handle_menu_input(
         match current_state.0 {
             GameState::MainMenu => {
                 // Do nothing
-                // TODO: maybe exit the game?
             }
             GameState::Intro => {
                 // Do nothing
-                // TODO: go back to the main menu
-                // have to figure out how to initialize stuff when
-                // we actually start the game
+            }
+            GameState::Outro => {
+                // Do Nothing
+            }
+            GameState::EndScreen => {
+                // Do Nothing
             }
             GameState::InGame => next_state.set(GameState::Paused),
             GameState::Paused => next_state.set(GameState::InGame),
@@ -366,13 +499,13 @@ fn handle_menu_input(
     }
 }
 
-fn hide_menu(mut query: Query<&mut Visibility, With<MenuRoot>>) {
+fn hide_pause_menu(mut query: Query<&mut Visibility, With<PauseMenuRoot>>) {
     for mut visibility in &mut query {
         *visibility = Visibility::Hidden;
     }
 }
 
-fn show_menu(mut query: Query<&mut Visibility, With<MenuRoot>>) {
+fn show_pause_menu(mut query: Query<&mut Visibility, With<PauseMenuRoot>>) {
     for mut visibility in &mut query {
         *visibility = Visibility::Visible;
     }
@@ -387,12 +520,17 @@ impl Plugin for MenuPlugin {
             .add_system(handle_button_interaction)
             .add_system(process_menu_event)
             .add_system(handle_menu_input)
-            .add_system(hide_menu.in_schedule(OnEnter(GameState::InGame)))
-            .add_system(show_menu.in_schedule(OnEnter(GameState::Paused)))
+            .add_system(hide_pause_menu.in_schedule(OnEnter(GameState::InGame)))
+            .add_system(show_pause_menu.in_schedule(OnEnter(GameState::Paused)))
             .add_system(setup_main_menu.in_schedule(OnEnter(GameState::MainMenu)))
             .add_system(cleanup_main_menu.in_schedule(OnExit(GameState::MainMenu)))
             .add_system(setup_intro_menu.in_schedule(OnEnter(GameState::Intro)))
             .add_system(cleanup_intro_menu.in_schedule(OnExit(GameState::Intro)))
-            .add_system(setup_pause_menu.in_schedule(OnExit(GameState::Intro)));
+            .add_system(setup_pause_menu.in_schedule(OnExit(GameState::Intro)))
+            .add_system(cleanup_pause_menu.in_schedule(OnEnter(GameState::Outro)))
+            .add_system(setup_outro_menu.in_schedule(OnEnter(GameState::Outro)))
+            .add_system(cleanup_outro_menu.in_schedule(OnExit(GameState::Outro)))
+            .add_system(setup_endscreen_menu.in_schedule(OnEnter(GameState::EndScreen)))
+            .add_system(cleanup_endscreen_menu.in_schedule(OnExit(GameState::EndScreen)));
     }
 }
