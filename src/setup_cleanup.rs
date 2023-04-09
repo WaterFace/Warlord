@@ -11,7 +11,7 @@ use crate::{
         StarfieldBundle, StarfieldCamera, StarfieldCameraBundle, StarfieldMaterial, StarfieldMesh,
     },
     state::{GameState, ProgressStages},
-    ui::CustomUICameraBundle,
+    ui::{CustomUICamera, CustomUICameraBundle},
     weapon::Slug,
 };
 
@@ -122,14 +122,13 @@ fn setup_reactions(mut commands: Commands) {
 
 fn setup_ui_camera(mut commands: Commands) {
     commands.spawn(CustomUICameraBundle::default());
-    // Don't need to clean this up because it should live as long as the game does
 }
 
-// fn cleanup_ui_camera(mut commands: Commands, query: Query<Entity, With<CustomUICamera>>) {
-//     for e in &query {
-//         commands.entity(e).despawn_recursive();
-//     }
-// }
+fn cleanup_ui_camera(mut commands: Commands, query: Query<Entity, With<CustomUICamera>>) {
+    for e in &query {
+        commands.entity(e).despawn_recursive();
+    }
+}
 
 fn cleanup_weapons(mut commands: Commands, query: Query<Entity, With<Slug>>) {
     for e in &query {
@@ -170,6 +169,7 @@ impl Plugin for SetupCleanupPlugin {
                 cleanup_rocks,
                 cleanup_particles,
                 cleanup_weapons,
+                cleanup_ui_camera,
             )
                 .in_schedule(OnEnter(GameState::Outro)),
         );
