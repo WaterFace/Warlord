@@ -127,7 +127,7 @@ impl Default for Inventory {
                     name: "STRANGE MATTER".into(),
                 },
                 InventoryEntry {
-                    current: 98.0,
+                    current: 0.0,
                     threshold: None,
                     limit: 100.0,
                     visible: false,
