@@ -7,7 +7,7 @@ use crate::{
     inventory::{Inventory, Reagent},
     reaction::{Reaction, Reactions},
     shield::ShieldEmitter,
-    ui::CustomUICamera,
+    ui::{CustomUICamera, EnabledControls},
     weapon::{CargoDumper, MainGun},
 };
 
@@ -66,12 +66,16 @@ fn exit_exploration_stage(mut query: Query<&mut Inventory>) {
     }
 }
 
-fn enter_gun_and_heat_stage(mut query: Query<(&mut Heat, &mut MainGun)>) {
+fn enter_gun_and_heat_stage(
+    mut query: Query<(&mut Heat, &mut MainGun)>,
+    mut enabled_controls: ResMut<EnabledControls>,
+) {
     for (mut heat, mut main_gun) in &mut query {
         heat.set_enabled(true);
         heat.set_threshold_visible(false);
         main_gun.enabled = true;
     }
+    *enabled_controls |= EnabledControls::Shoot;
 }
 
 fn update_gun_and_heat_stage(
@@ -124,6 +128,7 @@ fn exit_collect_exotic_stage(mut query: Query<&mut Inventory>) {
 
 fn enter_shield_and_strange_stage(
     mut query: Query<(&mut Inventory, &mut ShieldEmitter, &mut CargoDumper)>,
+    mut enabled_controls: ResMut<EnabledControls>,
 ) {
     for (mut inventory, mut shield_emitter, mut cargo_dumper) in &mut query {
         inventory
@@ -132,6 +137,7 @@ fn enter_shield_and_strange_stage(
         shield_emitter.enabled = true;
         cargo_dumper.enabled = true;
     }
+    *enabled_controls |= EnabledControls::Dump | EnabledControls::Shield;
 }
 
 fn update_shield_and_strange_stage(

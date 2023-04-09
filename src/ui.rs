@@ -326,7 +326,7 @@ fn setup_all_hints(mut commands: Commands, asset_server: Res<AssetServer>) {
     );
 }
 
-fn cleanup_hints(mut commands: Commands, query: Query<Entity, With<HintMarker>>) {
+fn cleanup_ui(mut commands: Commands, query: Query<Entity, With<UIMarker>>) {
     for e in &query {
         commands.entity(e).despawn_recursive();
     }
@@ -353,7 +353,7 @@ fn reposition_hints(
     mut hint_query: Query<&mut Transform, (With<HintAnchor>, Without<CustomUICamera>)>,
     ui_camera: Query<&Camera, With<CustomUICamera>>,
 ) {
-    let Ok(ui_camera) = ui_camera.get_single() else {return;};
+    let Ok(ui_camera) = ui_camera.get_single() else {debug!("Can't find ui camera");return;};
     let Some((top_left, _)) = ui_camera.logical_viewport_rect() else {return;};
     let Some(size) = ui_camera.logical_viewport_size() else {return;};
     let top_right = top_left + Vec2::new(size.x / 2.0, size.y / 2.0);
@@ -363,8 +363,184 @@ fn reposition_hints(
     }
 }
 
+use bitflags::bitflags;
+bitflags! {
+    #[derive(Resource, PartialEq, Eq, Hash)]
+    pub struct EnabledControls: u8 {
+        const Move   = 0b00000001;
+        const Look   = 0b00000010;
+        const Shoot  = 0b00000100;
+        const Dump   = 0b00001000;
+        const Shield = 0b00010000;
+    }
+}
+
+fn setup_control_flags(mut commands: Commands) {
+    commands.insert_resource(EnabledControls::Move | EnabledControls::Look);
+}
+
+fn setup_all_control_displays(mut commands: Commands, asset_server: Res<AssetServer>) {
+    setup_control_display(
+        &mut commands,
+        &asset_server,
+        "WASD",
+        "Move",
+        ControlIndex { index: 0 },
+    );
+    setup_control_display(
+        &mut commands,
+        &asset_server,
+        "MOUSE",
+        "Look",
+        ControlIndex { index: 1 },
+    );
+    setup_control_display(
+        &mut commands,
+        &asset_server,
+        "Left Mouse",
+        "Fire",
+        ControlIndex { index: 2 },
+    );
+    setup_control_display(
+        &mut commands,
+        &asset_server,
+        "F",
+        "Drop Cargo",
+        ControlIndex { index: 3 },
+    );
+    setup_control_display(
+        &mut commands,
+        &asset_server,
+        "Right Mouse",
+        "Shield",
+        ControlIndex { index: 4 },
+    );
+}
+
+fn update_control_display_visibility(
+    mut display_query: Query<(&mut Visibility, &ControlIndex), With<ControlDisplayAnchor>>,
+    enabled_controls: Res<EnabledControls>,
+) {
+    for (mut visibility, ControlIndex { index }) in &mut display_query {
+        let flag: u8 = 1 << index;
+        if enabled_controls.contains(EnabledControls::from_bits_retain(flag)) {
+            *visibility = Visibility::Visible
+        } else {
+            *visibility = Visibility::Hidden
+        }
+    }
+}
+
+fn reposition_control_displays(
+    mut display_query: Query<
+        (&mut Transform, &ControlIndex),
+        (With<ControlDisplayAnchor>, Without<CustomUICamera>),
+    >,
+    ui_camera: Query<&Camera, With<CustomUICamera>>,
+) {
+    let Ok(ui_camera) = ui_camera.get_single() else {return;};
+    // let Some((_, bottom_right)) = ui_camera.logical_viewport_rect() else {return;};
+    let Some(size) = ui_camera.logical_viewport_size() else {return;};
+    let bottom_right = Vec2::new(size.x / 2.0, -size.y / 2.0);
+    for (mut transform, ControlIndex { index }) in &mut display_query {
+        transform.translation.x = bottom_right.x - BAR_PADDING;
+        transform.translation.y =
+            bottom_right.y + (CONTROL_FONT_SIZE + BAR_PADDING) * *index as f32 + BAR_PADDING;
+    }
+}
+
 #[derive(Component, Debug, Default)]
 pub struct UIMarker;
+
+#[derive(Component, Debug, Default)]
+pub struct ControlDisplayAnchor;
+
+#[derive(Component, Debug, Default)]
+pub struct ControlIndex {
+    index: u32,
+}
+
+const CONTROL_FONT_SIZE: f32 = 25.0;
+const CONTROL_WIDTH: f32 = 200.0;
+fn setup_control_display<C: Component>(
+    commands: &mut Commands,
+    asset_server: &AssetServer,
+    control: &str,
+    text: &str,
+    marker: C,
+) {
+    let font = asset_server.load("font/BebasNeueRegular.otf");
+
+    commands
+        .spawn((
+            SpatialBundle {
+                visibility: Visibility::Visible,
+                ..Default::default()
+            },
+            UIMarker,
+            marker,
+            ControlDisplayAnchor,
+            RenderLayers::layer(1),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text2dBundle {
+                    text: Text::from_section(
+                        control,
+                        TextStyle {
+                            font: font.clone(),
+                            font_size: CONTROL_FONT_SIZE,
+                            color: Color::ORANGE_RED,
+                        },
+                    ),
+                    text_anchor: Anchor::BottomRight,
+                    text_2d_bounds: Text2dBounds {
+                        size: Vec2::new(CONTROL_WIDTH / 2.0, CONTROL_FONT_SIZE),
+                    },
+                    transform: Transform::from_xyz(
+                        -NUDGE_RIGHT - CONTROL_WIDTH / 2.0,
+                        -NUDGE_DOWN / 2.0,
+                        2.0,
+                    ),
+                    ..Default::default()
+                },
+                RenderLayers::layer(1),
+            ));
+            parent.spawn((
+                Text2dBundle {
+                    text: Text::from_section(
+                        text,
+                        TextStyle {
+                            font: font.clone(),
+                            font_size: CONTROL_FONT_SIZE,
+                            color: Color::WHITE,
+                        },
+                    ),
+                    text_anchor: Anchor::BottomRight,
+                    text_2d_bounds: Text2dBounds {
+                        size: Vec2::new(CONTROL_WIDTH / 2.0, CONTROL_FONT_SIZE),
+                    },
+                    transform: Transform::from_xyz(-NUDGE_RIGHT, -NUDGE_DOWN / 2.0, 2.0),
+                    ..Default::default()
+                },
+                RenderLayers::layer(1),
+            ));
+            // background
+            parent.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        anchor: Anchor::BottomRight,
+                        color: Color::rgba(0.3, 0.3, 0.3, 0.5),
+                        custom_size: Some(Vec2::new(CONTROL_WIDTH, CONTROL_FONT_SIZE)),
+                        ..Default::default()
+                    },
+                    transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                    ..Default::default()
+                },
+                RenderLayers::layer(1),
+            ));
+        });
+}
 
 #[derive(Component, Debug, Default)]
 pub struct HintAnchor;
@@ -542,7 +718,9 @@ pub struct UIPlugin;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(setup_all_hints.in_schedule(OnExit(GameState::Intro)));
-        app.add_system(cleanup_hints.in_schedule(OnEnter(GameState::Outro)));
+        app.add_system(setup_control_flags.in_schedule(OnExit(GameState::Intro)));
+        app.add_system(setup_all_control_displays.in_schedule(OnExit(GameState::Intro)));
+        app.add_system(cleanup_ui.in_schedule(OnEnter(GameState::Outro)));
         app.add_systems(
             (
                 setup_heat_display,
@@ -557,6 +735,8 @@ impl Plugin for UIPlugin {
                 update_reagent_bar_threshold,
                 display_correct_hint,
                 reposition_hints,
+                reposition_control_displays,
+                update_control_display_visibility,
             )
                 .in_set(OnUpdate(GameState::InGame)),
         );
