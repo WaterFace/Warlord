@@ -53,7 +53,7 @@ struct SlugVisuals {
     pub material: Handle<StandardMaterial>,
 }
 
-fn setup_slug(
+fn setup_slug_visuals(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -278,7 +278,7 @@ impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<FireMainGunEvent>()
             .add_event::<SlugDecayedEvent>()
-            .add_startup_system(setup_slug)
+            .add_startup_system(setup_slug_visuals)
             .add_systems(
                 (tick_slug, kill_slug)
                     .chain()

@@ -144,7 +144,7 @@ struct MainMenuRoot;
 
 fn setup_main_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     let font = assets_server.load("font/BebasNeueRegular.otf");
-
+    debug!("Setting up the main menu");
     commands
         .spawn((
             NodeBundle {

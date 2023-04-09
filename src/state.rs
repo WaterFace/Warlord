@@ -25,6 +25,7 @@ pub enum GameState {
 #[derive(States, Default, Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum ProgressStages {
     #[default]
+    None,
     Exploration,
     GunAndHeat,
     CollectExotic,

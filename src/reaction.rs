@@ -93,16 +93,18 @@ pub struct Reactions {
     pub reactions: Vec<Reaction>,
 }
 
-fn setup_reactions(mut commands: Commands) {
-    let reactions = vec![Reaction {
-        reagent1: Reagent::Minerals,
-        reagent2: None,
-        needs_heat: true,
-        rate: 0.5,
-        result: Some(Reagent::Exotic),
-    }];
+impl Default for Reactions {
+    fn default() -> Self {
+        let reactions = vec![Reaction {
+            reagent1: Reagent::Minerals,
+            reagent2: None,
+            needs_heat: true,
+            rate: 0.5,
+            result: Some(Reagent::Exotic),
+        }];
 
-    commands.insert_resource(Reactions { reactions })
+        Reactions { reactions }
+    }
 }
 
 fn perform_reactions(
@@ -124,7 +126,6 @@ pub struct ReactionPlugin;
 
 impl Plugin for ReactionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_reactions)
-            .add_system(perform_reactions.in_set(OnUpdate(GameState::InGame)));
+        app.add_system(perform_reactions.in_set(OnUpdate(GameState::InGame)));
     }
 }

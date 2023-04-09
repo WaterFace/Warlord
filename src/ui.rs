@@ -51,10 +51,6 @@ impl Default for CustomUICameraBundle {
     }
 }
 
-fn setup_ui_camera(mut commands: Commands) {
-    commands.spawn(CustomUICameraBundle::default());
-}
-
 #[derive(Component, Debug, Default)]
 struct CurrentHeatBar;
 
@@ -236,6 +232,9 @@ fn update_reagent_bar_threshold(
     }
 }
 
+#[derive(Component, Debug, Default)]
+pub struct UIMarker;
+
 fn setup_ui_bar<T: Component, U: Component, V: Component>(
     commands: &mut Commands,
     assets_server: &AssetServer,
@@ -261,6 +260,7 @@ fn setup_ui_bar<T: Component, U: Component, V: Component>(
                 ..Default::default()
             },
             anchor_component,
+            UIMarker,
             RenderLayers::layer(1),
         ))
         .with_children(|parent| {
@@ -362,7 +362,7 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_ui_camera).add_systems(
+        app.add_systems(
             (
                 setup_heat_display,
                 reposition_heat_bar,
