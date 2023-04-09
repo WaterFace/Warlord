@@ -12,8 +12,9 @@ use crate::{
     camera::{FocusPoint, MainCamera},
     heat::Heat,
     inventory::Inventory,
+    shield::ShieldEmitter,
     state::GameState,
-    weapon::MainGun,
+    weapon::{CargoDumper, MainGun},
 };
 
 #[derive(Bundle, Debug)]
@@ -30,6 +31,8 @@ pub struct PlayerBundle {
     pub main_gun: MainGun,
     pub heat: Heat,
     pub inventory: Inventory,
+    pub shield_emitter: ShieldEmitter,
+    pub cargo_dumper: CargoDumper,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
     pub action_state: ActionState<crate::input::Action>,
@@ -50,6 +53,8 @@ impl Default for PlayerBundle {
             focus_point: FocusPoint::default(),
             main_gun: MainGun::default(),
             heat: Heat::default(),
+            shield_emitter: ShieldEmitter::default(),
+            cargo_dumper: CargoDumper::default(),
             inventory: Inventory::default(),
             visibility: Visibility::Visible,
             computed_visibility: ComputedVisibility::default(),

@@ -17,6 +17,7 @@ use crate::{
 
 #[derive(Component, Debug)]
 pub struct MainGun {
+    pub enabled: bool,
     pub fire_delay: f32,
     pub delay_timer: Timer,
     pub recoil: f32,
@@ -29,6 +30,7 @@ pub struct MainGun {
 impl Default for MainGun {
     fn default() -> Self {
         Self {
+            enabled: false,
             fire_delay: 0.33,
             delay_timer: Timer::from_seconds(0.0, TimerMode::Once),
             recoil: 5.0,
@@ -136,10 +138,16 @@ fn fire_main_gun(
         action_state,
     ) in &mut player_query
     {
+        if !main_gun.enabled {
+            // main gun not enabled
+            return;
+        }
         if action_state.value(crate::input::Action::FireMainGun) <= 0.0 {
+            // Not pressing the fire input
             return;
         }
         if !main_gun.delay_timer.finished() {
+            // not ready to fire the next shot yet
             return;
         }
         if heat.limit() - heat.current() < main_gun.heat_generated {
@@ -195,10 +203,16 @@ fn fire_main_gun(
     }
 }
 
+#[derive(Component, Debug, Default)]
+pub struct CargoDumper {
+    pub enabled: bool,
+}
+
 fn dump_cargo(
     mut commands: Commands,
     mut query: Query<(
         &Player,
+        &CargoDumper,
         &Transform,
         &Velocity,
         &mut Inventory,
@@ -206,7 +220,10 @@ fn dump_cargo(
     )>,
     exotic_matter_appearance: Res<ExoticMatterAppearance>,
 ) {
-    for (player, transform, velocity, mut inventory, action_state) in &mut query {
+    for (player, cargo_dumper, transform, velocity, mut inventory, action_state) in &mut query {
+        if !cargo_dumper.enabled {
+            continue;
+        }
         if !action_state.just_pressed(Action::DumpCargo) {
             continue;
         }

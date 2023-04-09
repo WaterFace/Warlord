@@ -16,6 +16,11 @@ struct ShieldVisuals {
     material: Handle<StandardMaterial>,
 }
 
+#[derive(Component, Debug, Default)]
+pub struct ShieldEmitter {
+    pub enabled: bool,
+}
+
 #[derive(Component, Default)]
 pub struct Shield;
 
@@ -87,6 +92,7 @@ fn spawn_despawn_shield(
     player_query: Query<
         (
             Entity,
+            &ShieldEmitter,
             &ActionState<crate::input::Action>,
             Option<&ShieldParent>,
         ),
@@ -95,12 +101,13 @@ fn spawn_despawn_shield(
     shield_query: Query<Entity, (With<Shield>, Without<Player>)>,
     shield_visuals: Res<ShieldVisuals>,
 ) {
-    for (player_entity, action_state, maybe_shield_parent) in &player_query {
+    for (player_entity, shield_emitter, action_state, maybe_shield_parent) in &player_query {
         if action_state.pressed(crate::input::Action::Shield) {
-            if maybe_shield_parent.is_none()
-                || shield_query
-                    .get(maybe_shield_parent.unwrap().shield)
-                    .is_err()
+            if shield_emitter.enabled
+                && (maybe_shield_parent.is_none()
+                    || shield_query
+                        .get(maybe_shield_parent.unwrap().shield)
+                        .is_err())
             {
                 // Then there's no shield and we should spawn one
                 let shield = commands

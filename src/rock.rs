@@ -236,7 +236,7 @@ fn spawn_rocks(
                         velocity,
                         collectible: Collectible::CollectibleReagent {
                             reagent: Reagent::Minerals,
-                            amount: 2.0,
+                            amount: 1.0,
                         },
                         ..Default::default()
                     })
@@ -332,7 +332,7 @@ fn handle_destruction_event(
                     velocity,
                     collectible: Collectible::CollectibleReagent {
                         reagent: Reagent::Minerals,
-                        amount: 1.0,
+                        amount: 0.5,
                     },
                     ..Default::default()
                 })

@@ -36,6 +36,7 @@ pub struct ReagentEvent {
 pub struct InventoryEntry {
     current: f32,
     limit: f32,
+    threshold: Option<f32>,
     visible: bool,
     color: Color,
     name: String,
@@ -48,6 +49,14 @@ impl InventoryEntry {
 
     pub fn limit(&self) -> f32 {
         self.limit
+    }
+
+    pub fn threshold(&self) -> Option<f32> {
+        self.threshold
+    }
+
+    pub fn set_threshold(&mut self, threshold: Option<f32>) {
+        self.threshold = threshold;
     }
 
     pub fn visibile(&self) -> bool {
@@ -95,6 +104,7 @@ impl Default for Inventory {
             reagents: [
                 InventoryEntry {
                     current: 0.0,
+                    threshold: None,
                     limit: 10.0,
                     visible: true,
                     color: Color::CYAN,
@@ -102,6 +112,7 @@ impl Default for Inventory {
                 },
                 InventoryEntry {
                     current: 0.0,
+                    threshold: None,
                     limit: 25.0,
                     visible: false,
                     color: Color::rgb(1.0, 0.0, 1.0),
@@ -109,6 +120,7 @@ impl Default for Inventory {
                 },
                 InventoryEntry {
                     current: 0.0,
+                    threshold: None,
                     limit: 5.0,
                     visible: false,
                     color: Color::rgb(0.3, 0.1, 0.1),
@@ -116,6 +128,7 @@ impl Default for Inventory {
                 },
                 InventoryEntry {
                     current: 0.0,
+                    threshold: None,
                     limit: 50.0,
                     visible: false,
                     color: Color::rgb(0.0, 1.0, 0.0),

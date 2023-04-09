@@ -102,13 +102,13 @@ fn setup_reactions(mut commands: Commands) {
             rate: 0.5,
             result: Some(Reagent::Exotic),
         },
-        Reaction {
-            reagent1: Reagent::Exotic,
-            reagent2: None,
-            needs_heat: false,
-            rate: 0.1,
-            result: Some(Reagent::Waste),
-        },
+        // Reaction {
+        //     reagent1: Reagent::Exotic,
+        //     reagent2: None,
+        //     needs_heat: false,
+        //     rate: 0.1,
+        //     result: Some(Reagent::Waste),
+        // },
     ];
 
     commands.insert_resource(Reactions { reactions })

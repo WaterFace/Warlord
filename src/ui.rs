@@ -56,12 +56,13 @@ fn setup_ui_camera(mut commands: Commands) {
 }
 
 #[derive(Component, Debug, Default)]
-struct CurrentHeatBar {
-    // gradient: Vec<(f32, Color)>,
-}
+struct CurrentHeatBar;
 
 #[derive(Component, Debug, Default)]
 struct HeatBarAnchor;
+
+#[derive(Component, Debug, Default)]
+struct HeatBarThreshold;
 
 fn setup_heat_display(
     mut commands: Commands,
@@ -73,11 +74,12 @@ fn setup_heat_display(
         &mut commands,
         &assets_server,
         HeatBarAnchor,
-        CurrentHeatBar::default(),
+        CurrentHeatBar,
+        HeatBarThreshold,
         "HEAT",
         Color::RED,
         Color::WHITE,
-        Some(heat.reaction_threshold() / heat.limit()),
+        Some(heat.reaction_threshold()),
     );
 }
 
@@ -115,6 +117,11 @@ struct ReagentBarAnchor {
     reagent: Reagent,
 }
 
+#[derive(Component, Debug)]
+struct ReagentBarThreshold {
+    reagent: Reagent,
+}
+
 const FONT_HEIGHT: f32 = 40.0;
 const BAR_LENGTH: f32 = 250.0;
 const BAR_PADDING: f32 = 4.0;
@@ -131,6 +138,7 @@ fn setup_reagent_bars(
             &assets_server,
             ReagentBarAnchor { reagent },
             CurrentReagentBar { reagent },
+            ReagentBarThreshold { reagent },
             entry.name(),
             entry.color(),
             Color::WHITE,
@@ -166,6 +174,21 @@ fn reposition_reagent_bar(
     }
 }
 
+fn update_heat_bar_visibility(
+    mut heat_bar_query: Query<(&mut Visibility, &HeatBarAnchor)>,
+    heat_query: Query<&Heat, (With<Player>, Without<HeatBarAnchor>)>,
+) {
+    let Ok(heat) = heat_query.get_single() else { return; };
+
+    for (mut visibility, HeatBarAnchor) in &mut heat_bar_query {
+        if heat.enabled() {
+            *visibility = Visibility::Visible;
+        } else {
+            *visibility = Visibility::Hidden;
+        }
+    }
+}
+
 fn update_reagent_bar_visibility(
     mut reagent_bar_query: Query<(&mut Visibility, &ReagentBarAnchor)>,
     inventory_query: Query<&Inventory, (With<Player>, Without<ReagentBarAnchor>)>,
@@ -181,11 +204,44 @@ fn update_reagent_bar_visibility(
     }
 }
 
-fn setup_ui_bar<T: Component, U: Component>(
+fn update_heat_bar_threshold(
+    mut heat_bar_query: Query<(&mut Visibility, &mut Transform, &HeatBarThreshold)>,
+    heat_query: Query<&Heat, (With<Player>, Without<HeatBarThreshold>)>,
+) {
+    let Ok(heat) = heat_query.get_single() else { return; };
+
+    for (mut visibility, mut transform, HeatBarThreshold) in &mut heat_bar_query {
+        if heat.threshold_visible() {
+            *visibility = Visibility::Inherited;
+            transform.translation.x = BAR_LENGTH * heat.reaction_threshold();
+        } else {
+            *visibility = Visibility::Hidden;
+        }
+    }
+}
+
+fn update_reagent_bar_threshold(
+    mut reagent_bar_query: Query<(&mut Visibility, &mut Transform, &ReagentBarThreshold)>,
+    inventory_query: Query<&Inventory, (With<Player>, Without<ReagentBarThreshold>)>,
+) {
+    let Ok(inventory) = inventory_query.get_single() else { return; };
+
+    for (mut visibility, mut transform, ReagentBarThreshold { reagent }) in &mut reagent_bar_query {
+        if let Some(threshold) = inventory.reagent(*reagent).threshold() {
+            *visibility = Visibility::Inherited;
+            transform.translation.x = BAR_LENGTH * threshold;
+        } else {
+            *visibility = Visibility::Hidden;
+        }
+    }
+}
+
+fn setup_ui_bar<T: Component, U: Component, V: Component>(
     commands: &mut Commands,
     assets_server: &AssetServer,
     anchor_component: T,
     current_component: U,
+    threshold_component: V,
     label: &str,
     bar_color: Color,
     text_color: Color,
@@ -274,21 +330,30 @@ fn setup_ui_bar<T: Component, U: Component>(
                 },
                 RenderLayers::layer(1),
             ));
-            if let Some(threshold) = threshold {
-                parent.spawn((
-                    SpriteBundle {
-                        sprite: Sprite {
-                            anchor: Anchor::TopLeft,
-                            color: Color::YELLOW,
-                            custom_size: Some(Vec2::new(2.0, FONT_HEIGHT)),
-                            ..Default::default()
-                        },
-                        transform: Transform::from_xyz(BAR_LENGTH * threshold, 0.0, 2.0),
+            let visibility = if let Some(_) = threshold {
+                Visibility::Visible
+            } else {
+                Visibility::Hidden
+            };
+            parent.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        anchor: Anchor::TopLeft,
+                        color: Color::YELLOW,
+                        custom_size: Some(Vec2::new(2.0, FONT_HEIGHT)),
                         ..Default::default()
                     },
-                    RenderLayers::layer(1),
-                ));
-            }
+                    visibility,
+                    transform: Transform::from_xyz(
+                        BAR_LENGTH * threshold.unwrap_or(f32::INFINITY),
+                        0.0,
+                        2.0,
+                    ),
+                    ..Default::default()
+                },
+                RenderLayers::layer(1),
+                threshold_component,
+            ));
         })
         .id()
 }
@@ -303,9 +368,12 @@ impl Plugin for UIPlugin {
                 reposition_heat_bar,
                 reposition_reagent_bar,
                 update_heat_bar,
+                update_heat_bar_visibility,
+                update_heat_bar_threshold,
                 setup_reagent_bars,
                 update_reagent_bar,
                 update_reagent_bar_visibility,
+                update_reagent_bar_threshold,
             )
                 .in_set(OnUpdate(GameState::InGame)),
         );
