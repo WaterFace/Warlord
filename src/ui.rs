@@ -14,7 +14,7 @@ use crate::{
     heat::Heat,
     inventory::{Inventory, Reagent},
     player::Player,
-    state::GameState,
+    state::{GameState, ProgressStages},
 };
 
 #[derive(Component, Debug, Default)]
@@ -233,7 +233,191 @@ fn update_reagent_bar_threshold(
 }
 
 #[derive(Component, Debug, Default)]
+struct HintMarker {
+    stage: ProgressStages,
+}
+
+fn setup_all_hints(mut commands: Commands, asset_server: Res<AssetServer>) {
+    const FONT_SIZE: f32 = 25.0;
+
+    let text = include_str!("hints/0.txt");
+    let font = asset_server.load("font/BebasNeueRegular.otf");
+    let sections = crate::util::markup_to_text_sections(
+        text,
+        font,
+        FONT_SIZE,
+        Color::ORANGE_RED,
+        Color::WHITE,
+    );
+    setup_hint(
+        &mut commands,
+        sections,
+        HintMarker {
+            stage: ProgressStages::Exploration,
+        },
+    );
+
+    let text = include_str!("hints/1.txt");
+    let font = asset_server.load("font/BebasNeueRegular.otf");
+    let sections = crate::util::markup_to_text_sections(
+        text,
+        font,
+        FONT_SIZE,
+        Color::ORANGE_RED,
+        Color::WHITE,
+    );
+    setup_hint(
+        &mut commands,
+        sections,
+        HintMarker {
+            stage: ProgressStages::GunAndHeat,
+        },
+    );
+
+    let text = include_str!("hints/2.txt");
+    let font = asset_server.load("font/BebasNeueRegular.otf");
+    let sections = crate::util::markup_to_text_sections(
+        text,
+        font,
+        FONT_SIZE,
+        Color::ORANGE_RED,
+        Color::WHITE,
+    );
+    setup_hint(
+        &mut commands,
+        sections,
+        HintMarker {
+            stage: ProgressStages::CollectExotic,
+        },
+    );
+
+    let text = include_str!("hints/3.txt");
+    let font = asset_server.load("font/BebasNeueRegular.otf");
+    let sections = crate::util::markup_to_text_sections(
+        text,
+        font,
+        FONT_SIZE,
+        Color::ORANGE_RED,
+        Color::WHITE,
+    );
+    setup_hint(
+        &mut commands,
+        sections,
+        HintMarker {
+            stage: ProgressStages::ShieldAndStrange,
+        },
+    );
+
+    let text = include_str!("hints/4.txt");
+    let font = asset_server.load("font/BebasNeueRegular.otf");
+    let sections = crate::util::markup_to_text_sections(
+        text,
+        font,
+        FONT_SIZE,
+        Color::ORANGE_RED,
+        Color::WHITE,
+    );
+    setup_hint(
+        &mut commands,
+        sections,
+        HintMarker {
+            stage: ProgressStages::Continuum,
+        },
+    );
+}
+
+fn cleanup_hints(mut commands: Commands, query: Query<Entity, With<HintMarker>>) {
+    for e in &query {
+        commands.entity(e).despawn_recursive();
+    }
+}
+
+fn display_correct_hint(
+    mut query: Query<(&mut Visibility, &HintMarker)>,
+    progress: Res<State<ProgressStages>>,
+) {
+    if !progress.is_changed() {
+        return;
+    }
+
+    for (mut visibility, hint_marker) in &mut query {
+        *visibility = Visibility::Hidden;
+
+        if hint_marker.stage == progress.0 {
+            *visibility = Visibility::Visible;
+        }
+    }
+}
+
+fn reposition_hints(
+    mut hint_query: Query<&mut Transform, (With<HintAnchor>, Without<CustomUICamera>)>,
+    ui_camera: Query<&Camera, With<CustomUICamera>>,
+) {
+    let Ok(ui_camera) = ui_camera.get_single() else {return;};
+    let Some((top_left, _)) = ui_camera.logical_viewport_rect() else {return;};
+    let Some(size) = ui_camera.logical_viewport_size() else {return;};
+    let top_right = top_left + Vec2::new(size.x / 2.0, size.y / 2.0);
+    for mut transform in &mut hint_query {
+        transform.translation.x = top_right.x - BAR_PADDING;
+        transform.translation.y = top_right.y - BAR_PADDING;
+    }
+}
+
+#[derive(Component, Debug, Default)]
 pub struct UIMarker;
+
+#[derive(Component, Debug, Default)]
+pub struct HintAnchor;
+
+const HINT_WIDTH: f32 = 350.0;
+const HINT_HEIGHT: f32 = 200.0;
+
+// These are used to place the text properly
+// probably need to be tuned differently for different fonts
+const NUDGE_RIGHT: f32 = 5.0;
+const NUDGE_DOWN: f32 = 4.0;
+
+fn setup_hint<C: Component>(commands: &mut Commands, sections: Vec<TextSection>, marker: C) {
+    commands
+        .spawn((
+            SpatialBundle {
+                visibility: Visibility::Hidden,
+                ..Default::default()
+            },
+            UIMarker,
+            HintAnchor,
+            marker,
+            RenderLayers::layer(1),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text2dBundle {
+                    text: Text::from_sections(sections.clone()).with_alignment(TextAlignment::Left),
+                    text_anchor: Anchor::TopRight,
+                    text_2d_bounds: Text2dBounds {
+                        size: Vec2::new(HINT_WIDTH, HINT_HEIGHT),
+                    },
+                    transform: Transform::from_xyz(-NUDGE_RIGHT, -NUDGE_DOWN, 2.0),
+                    ..Default::default()
+                },
+                RenderLayers::layer(1),
+            ));
+            // background
+            parent.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        anchor: Anchor::TopRight,
+                        color: Color::rgba(0.3, 0.3, 0.3, 0.5),
+                        custom_size: Some(Vec2::new(HINT_WIDTH + 15.0, HINT_HEIGHT + 15.0)),
+                        ..Default::default()
+                    },
+                    transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                    ..Default::default()
+                },
+                RenderLayers::layer(1),
+            ));
+        });
+}
 
 fn setup_ui_bar<T: Component, U: Component, V: Component>(
     commands: &mut Commands,
@@ -247,11 +431,6 @@ fn setup_ui_bar<T: Component, U: Component, V: Component>(
     threshold: Option<f32>,
 ) -> Entity {
     let font = assets_server.load("font/BebasNeueRegular.otf");
-
-    // These are used to place the text properly
-    // probably need to be tuned differently for different fonts
-    const NUDGE_RIGHT: f32 = 5.0;
-    const NUDGE_DOWN: f32 = 4.0;
 
     commands
         .spawn((
@@ -362,6 +541,8 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
+        app.add_system(setup_all_hints.in_schedule(OnExit(GameState::Intro)));
+        app.add_system(cleanup_hints.in_schedule(OnEnter(GameState::Outro)));
         app.add_systems(
             (
                 setup_heat_display,
@@ -374,6 +555,8 @@ impl Plugin for UIPlugin {
                 update_reagent_bar,
                 update_reagent_bar_visibility,
                 update_reagent_bar_threshold,
+                display_correct_hint,
+                reposition_hints,
             )
                 .in_set(OnUpdate(GameState::InGame)),
         );

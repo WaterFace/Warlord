@@ -1,4 +1,7 @@
-use bevy::prelude::Vec2;
+use bevy::{
+    prelude::{Color, Handle, Vec2},
+    text::{Font, TextSection, TextStyle},
+};
 use rand::{distributions::uniform::SampleUniform, Rng};
 
 pub fn random_direction() -> Vec2 {
@@ -24,4 +27,43 @@ pub fn random_in_circle(radius: f32) -> Vec2 {
             return Vec2::new(x, y) * radius;
         }
     }
+}
+
+pub fn markup_to_text_sections(
+    input: &str,
+    font: Handle<Font>,
+    font_size: f32,
+    highlight_color: Color,
+    normal_color: Color,
+) -> Vec<TextSection> {
+    let mut result: Vec<_> = Vec::new();
+    let split = input.split('*');
+    let normal_style = TextStyle {
+        color: normal_color,
+        font: font.clone(),
+        font_size,
+    };
+    let highlight_style = TextStyle {
+        color: highlight_color,
+        font: font.clone(),
+        font_size,
+    };
+
+    let mut highlight = false;
+    for s in split {
+        if highlight {
+            result.push(TextSection {
+                value: s.to_owned(),
+                style: highlight_style.clone(),
+            });
+        } else {
+            result.push(TextSection {
+                value: s.to_owned(),
+                style: normal_style.clone(),
+            });
+        }
+        highlight = !highlight;
+    }
+
+    return result;
 }

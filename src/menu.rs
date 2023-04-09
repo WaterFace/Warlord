@@ -4,6 +4,7 @@ use leafwing_input_manager::{prelude::ActionState, InputManagerBundle};
 use crate::{
     input::default_menu_input_map,
     state::{GameState, ProgressStages},
+    util::markup_to_text_sections,
 };
 
 #[derive(Component, Debug)]
@@ -203,45 +204,6 @@ fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuR
     }
 }
 
-fn markup_to_text_sections(
-    input: &str,
-    font: Handle<Font>,
-    font_size: f32,
-    highlight_color: Color,
-    normal_color: Color,
-) -> Vec<TextSection> {
-    let mut result: Vec<_> = Vec::new();
-    let split = input.split('*');
-    let normal_style = TextStyle {
-        color: normal_color,
-        font: font.clone(),
-        font_size,
-    };
-    let highlight_style = TextStyle {
-        color: highlight_color,
-        font: font.clone(),
-        font_size,
-    };
-
-    let mut highlight = false;
-    for s in split {
-        if highlight {
-            result.push(TextSection {
-                value: s.to_owned(),
-                style: highlight_style.clone(),
-            });
-        } else {
-            result.push(TextSection {
-                value: s.to_owned(),
-                style: normal_style.clone(),
-            });
-        }
-        highlight = !highlight;
-    }
-
-    return result;
-}
-
 #[derive(Component)]
 struct IntroMenuRoot;
 
@@ -380,12 +342,7 @@ fn setup_endscreen_menu(mut commands: Commands, assets_server: Res<AssetServer>)
                 event: Some(MenuEvent::Restart),
                 ..Default::default()
             };
-            add_menu_button(
-                parent,
-                &assets_server,
-                "RETURN TO MAIN MENU",
-                restart_button,
-            );
+            add_menu_button(parent, &assets_server, "MAIN MENU", restart_button);
         });
 }
 
