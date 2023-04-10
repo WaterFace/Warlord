@@ -370,8 +370,8 @@ bitflags! {
         const Move   = 0b00000001;
         const Look   = 0b00000010;
         const Shoot  = 0b00000100;
-        const Dump   = 0b00001000;
-        const Shield = 0b00010000;
+        const Shield = 0b00001000;
+        const Dump   = 0b00010000;
     }
 }
 
@@ -404,15 +404,15 @@ fn setup_all_control_displays(mut commands: Commands, asset_server: Res<AssetSer
     setup_control_display(
         &mut commands,
         &asset_server,
-        "F",
-        "Drop Cargo",
+        "Right Mouse",
+        "Shield",
         ControlIndex { index: 3 },
     );
     setup_control_display(
         &mut commands,
         &asset_server,
-        "Right Mouse",
-        "Shield",
+        "F",
+        "Drop Cargo",
         ControlIndex { index: 4 },
     );
 }
