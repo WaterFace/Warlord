@@ -104,22 +104,23 @@ impl Default for StarfieldCameraBundle {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(AsBindGroup, TypeUuid, Debug, Clone, ShaderType)]
 #[uuid = "c58cc961-65cf-4eef-b3be-e12b99f55ec5"]
 #[uniform(0, StarfieldMaterialUniform)]
 pub struct StarfieldMaterial {
+    pub camera_position: Vec3,
     pub parallax_factor: f32,
-    pub camera_position: Vec2,
-
-    pub resolution: Vec2,
+    pub resolution: Vec3,
+    pub time: f32,
 }
 
 impl Default for StarfieldMaterial {
     fn default() -> Self {
         Self {
             parallax_factor: 1.0,
-            camera_position: Vec2::ZERO,
-            resolution: Vec2::ZERO,
+            time: 0.0,
+            camera_position: Vec3::ZERO,
+            resolution: Vec3::ZERO,
         }
     }
 }
@@ -152,11 +153,10 @@ impl Material for StarfieldMaterial {
 
 #[derive(ShaderType)]
 struct StarfieldMaterialUniform {
-    // parallax parameters
+    pub camera_position: Vec3,
     pub parallax_factor: f32,
-    pub camera_position: Vec2,
-
-    pub resolution: Vec2,
+    pub resolution: Vec3,
+    pub time: f32,
 }
 
 impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
@@ -166,6 +166,7 @@ impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
     ) -> StarfieldMaterialUniform {
         StarfieldMaterialUniform {
             parallax_factor: self.parallax_factor,
+            time: self.time,
             camera_position: self.camera_position,
             resolution: self.resolution,
         }
@@ -183,12 +184,18 @@ fn update_starfield_on_resize(
     let size = Vec2::abs(max - min);
 
     for mut starfield in starfields.iter_mut() {
-        starfield.1.resolution = size;
+        starfield.1.resolution = (size, 0.0).into();
     }
 
     for mut starfield in &mut starfield_query {
         debug!("Resized starfield to {:?}", size);
         starfield.scale = Vec3::new(size.x, size.y, 1.0);
+    }
+}
+
+fn update_starfield_time(mut starfields: ResMut<Assets<StarfieldMaterial>>, time: Res<Time>) {
+    for mut starfield in starfields.iter_mut() {
+        starfield.1.time = time.elapsed_seconds_wrapped();
     }
 }
 
@@ -201,7 +208,7 @@ fn update_starfield_camera_position(
 ) {
     let Ok(main_camera) = main_camera_query.get_single() else { return; };
     for mut starfield in starfields.iter_mut() {
-        starfield.1.camera_position = main_camera.translation().truncate();
+        starfield.1.camera_position = main_camera.translation();
     }
 }
 
@@ -212,7 +219,11 @@ impl Plugin for StarfieldShaderPlugin {
         app.add_plugin(NoisyShaderPlugin)
             .add_plugin(MaterialPlugin::<StarfieldMaterial>::default())
             .add_systems(
-                (update_starfield_on_resize, update_starfield_camera_position)
+                (
+                    update_starfield_on_resize,
+                    update_starfield_camera_position,
+                    update_starfield_time,
+                )
                     .in_set(OnUpdate(GameState::InGame)),
             );
     }

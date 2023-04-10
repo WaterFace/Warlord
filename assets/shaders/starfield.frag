@@ -4,13 +4,19 @@ layout(location = 0) in vec2 v_Uv;
 layout(location = 0) out vec4 o_Target;
 
 struct StarfieldMaterial {
-    // parallax parameters
+    vec3 camera_position;
     float parallax_factor;
-    vec2 camera_position;
-    vec2 resolution;
+    vec3 resolution;
+    float time;
 };
 
 layout(set = 1, binding = 0) uniform StarfieldMaterial material;
+
+// layout(set = 1, binding = 0) uniform vec3 camera_position;
+// layout(set = 1, binding = 1) uniform vec3 resolution;
+// layout(set = 1, binding = 2) uniform float parallax_factor;
+// layout(set = 1, binding = 3) uniform float time;
+
 
 vec2 random2(vec2 c) {
     float j = 4096.0*sin(dot(c,vec2(17.0, 59.4)));
@@ -70,10 +76,12 @@ float stars(vec2 uv, float scale, float cutoff) {
 }
 
 void main() {
-  vec2 uv = v_Uv - vec2(0.5) + material.parallax_factor * material.camera_position * vec2(1.0, -1.0) / material.resolution;
+  vec2 uv = v_Uv - vec2(0.5) + material.parallax_factor * material.camera_position.xy * vec2(1.0, -1.0) / material.resolution.xy;
   uv.x *= material.resolution.x / material.resolution.y;
 
-  vec3 color = vec3(0.0);
+  float t = material.time * material.camera_position.z * material.resolution.z;
+
+  vec3 color = vec3(0.0) + t;
 
   color += stars(uv, 50.0/1.3, 0.95) * color_temperature(10000.0) * 3.0;
   color += stars(uv, 25.0/1.3, 0.98) * color_temperature(60000.0) * 25.0;
