@@ -36,4 +36,4 @@ rustflags = ["-Zshare-generics=n"]
 runner = "wasm-server-runner"
 
 [build]
-rustflags = ["--remap-path-prefix", "C:\\Users\\Kevin=~"]
+rustflags = ["--remap-path-prefix", "$HOME=~"]
