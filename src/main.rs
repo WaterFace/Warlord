@@ -16,6 +16,7 @@ mod reaction;
 mod rock;
 mod setup_cleanup;
 mod shield;
+mod sound;
 mod starfield_shader;
 mod state;
 mod ui;
@@ -64,6 +65,7 @@ fn main() {
         .add_plugin(menu::MenuPlugin)
         .add_plugin(particles::ParticlePlugin)
         .add_plugin(shield::ShieldPlugin)
+        .add_plugin(sound::SoundPlugin)
         .add_startup_system(setup)
         .run();
 }

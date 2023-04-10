@@ -11,6 +11,7 @@ use crate::{
     inventory::{Inventory, Reagent},
     player::Player,
     rock::RotatingRock,
+    sound::SoundEvent,
     state::GameState,
     util::{random_direction, random_range},
 };
@@ -126,7 +127,8 @@ fn fire_main_gun(
         &ActionState<crate::input::Action>,
     )>,
     slug_visuals: Res<SlugVisuals>,
-    mut writer: EventWriter<FireMainGunEvent>,
+    mut gun_event_writer: EventWriter<FireMainGunEvent>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for (
         player,
@@ -188,9 +190,13 @@ fn fire_main_gun(
             },
         ));
 
-        writer.send(FireMainGunEvent {
+        gun_event_writer.send(FireMainGunEvent {
             position: Vec3::new(pos.x, pos.y, transform.translation().z),
             facing: player.facing,
+        });
+
+        sound_event_writer.send(SoundEvent::CannonFire {
+            direction: player.facing,
         });
 
         ext_impulse.impulse += -facing_dir * main_gun.recoil;

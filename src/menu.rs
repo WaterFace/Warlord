@@ -3,6 +3,7 @@ use leafwing_input_manager::{prelude::ActionState, InputManagerBundle};
 
 use crate::{
     input::default_menu_input_map,
+    sound::SoundEvent,
     state::{GameState, ProgressStages},
     util::markup_to_text_sections,
 };
@@ -355,15 +356,17 @@ fn cleanup_endscreen_menu(mut commands: Commands, query: Query<Entity, With<EndS
 
 fn handle_button_interaction(
     mut query: Query<(&Interaction, &MenuButton, &mut BackgroundColor), Changed<Interaction>>,
-    mut writer: EventWriter<MenuEvent>,
+    mut menu_event_writer: EventWriter<MenuEvent>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for (interaction, menu_button, mut color) in &mut query {
         match interaction {
             Interaction::Clicked => {
                 *color = menu_button.pressed_color.into();
                 if let Some(event) = menu_button.event {
-                    writer.send(event);
+                    menu_event_writer.send(event);
                 }
+                sound_event_writer.send(SoundEvent::ButtonClick);
             }
             Interaction::Hovered => {
                 *color = menu_button.hover_color.into();

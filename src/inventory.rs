@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{collectible::CollectionEvent, state::GameState};
+use crate::{collectible::CollectionEvent, sound::SoundEvent, state::GameState};
 
 // KEEP THIS UPDATED:
 pub const REAGENT_TYPES: usize = 4;
@@ -142,16 +142,18 @@ impl Default for Inventory {
 fn handle_collection_event(
     mut reader: EventReader<CollectionEvent>,
     mut inventory_query: Query<&mut Inventory>,
-    mut writer: EventWriter<ReagentEvent>,
+    mut reagent_event_writer: EventWriter<ReagentEvent>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for ev in reader.iter() {
         for mut inv in &mut inventory_query {
             debug!("Adding {:?} to reagent {:?}", ev.amount, ev.reagent);
             inv.reagent_mut(ev.reagent).add(ev.amount);
-            writer.send(ReagentEvent {
+            reagent_event_writer.send(ReagentEvent {
                 reagent: ev.reagent,
                 delta: ev.amount,
             });
+            sound_event_writer.send(SoundEvent::Collected);
         }
     }
 }

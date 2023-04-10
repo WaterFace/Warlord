@@ -7,6 +7,8 @@ use bevy_rapier2d::prelude::{Collider, CollisionEvent, RigidBody, Velocity};
 use crate::camera::MainCamera;
 use crate::collectible::{Collectible, CollectibleBundle, MineralAppearance};
 use crate::inventory::Reagent;
+use crate::player::Player;
+use crate::sound::SoundEvent;
 use crate::state::GameState;
 use crate::util::{random_direction, random_range};
 use crate::weapon::Slug;
@@ -276,29 +278,35 @@ pub struct RockDestroyed {
     pub position: Vec3,
 }
 
-fn handle_projectile_collisions(
+fn handle_rock_collisions(
     mut reader: EventReader<CollisionEvent>,
     rock_query: Query<&Transform, With<Rock>>,
     slug_query: Query<&Slug, Without<Rock>>,
-    mut writer: EventWriter<RockDestroyed>,
+    player_query: Query<&Player, (Without<Rock>, Without<Slug>)>,
+    mut rock_destroyed_writer: EventWriter<RockDestroyed>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for ev in reader.iter() {
         match ev {
             CollisionEvent::Started(e1, e2, _flags) => {
                 if rock_query.get(*e1).is_ok() && slug_query.get(*e2).is_ok() {
                     if let Ok(rock_transform) = rock_query.get(*e1) {
-                        writer.send(RockDestroyed {
+                        rock_destroyed_writer.send(RockDestroyed {
                             entity: *e1,
                             position: rock_transform.translation,
                         })
                     }
                 } else if rock_query.get(*e2).is_ok() && slug_query.get(*e1).is_ok() {
                     if let Ok(rock_transform) = rock_query.get(*e2) {
-                        writer.send(RockDestroyed {
+                        rock_destroyed_writer.send(RockDestroyed {
                             entity: *e2,
                             position: rock_transform.translation,
                         })
                     }
+                } else if rock_query.get(*e2).is_ok() && player_query.get(*e1).is_ok() {
+                    sound_event_writer.send(SoundEvent::RockCollision);
+                } else if rock_query.get(*e1).is_ok() && player_query.get(*e2).is_ok() {
+                    sound_event_writer.send(SoundEvent::RockCollision);
                 }
             }
             _ => {}
@@ -310,13 +318,20 @@ fn handle_destruction_event(
     mut commands: Commands,
     mut reader: EventReader<RockDestroyed>,
     rock_query: Query<&Transform, With<Rock>>,
+    player_query: Query<&Transform, (With<Player>, Without<Rock>)>,
     mineral_appearance: Res<MineralAppearance>,
     mut rock_limit: ResMut<RockLimit>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for ev in reader.iter() {
         let Ok(rock_transform) = rock_query.get(ev.entity) else { continue; };
+
         commands.entity(ev.entity).despawn_recursive();
         rock_limit.current -= 1;
+        if let Ok(player_transform) = player_query.get_single() {
+            let diff = rock_transform.translation - player_transform.translation;
+            sound_event_writer.send(SoundEvent::RockDestroyed { relative_pos: diff });
+        }
         for _ in 0..3 {
             let transform = Transform::from_translation(rock_transform.translation)
                 .with_scale(Vec3::splat(0.5));
@@ -366,7 +381,7 @@ impl Plugin for RockPlugin {
                     spawn_rocks,
                     cull_far_away_entities,
                     rotate_rocks,
-                    handle_projectile_collisions,
+                    handle_rock_collisions,
                     handle_destruction_event,
                 )
                     .in_set(OnUpdate(GameState::InGame)),

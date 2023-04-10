@@ -7,6 +7,7 @@ use crate::{
     inventory::Reagent,
     player::Player,
     rock::{Rock, RockDestroyed},
+    sound::SoundEvent,
     state::GameState,
 };
 
@@ -204,15 +205,19 @@ fn handle_collision(
 fn handle_shield_collisions(
     mut commands: Commands,
     mut reader: EventReader<ShieldCollision>,
-    mut writer: EventWriter<RockDestroyed>,
+    mut rock_destroyed_writer: EventWriter<RockDestroyed>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
+    player_query: Query<&Transform, With<Player>>,
     strange_matter_appearance: Res<StrangeMatterAppearance>,
 ) {
     for ev in reader.iter() {
         match ev {
-            ShieldCollision::Rock { entity, position } => writer.send(RockDestroyed {
-                entity: *entity,
-                position: *position,
-            }),
+            ShieldCollision::Rock { entity, position } => {
+                rock_destroyed_writer.send(RockDestroyed {
+                    entity: *entity,
+                    position: *position,
+                })
+            }
             ShieldCollision::Collectible {
                 entity,
                 position,
@@ -221,9 +226,10 @@ fn handle_shield_collisions(
             } => {
                 match reagent {
                     Reagent::Exotic => {
+                        let transform = Transform::from_translation(*position);
                         commands.entity(*entity).despawn_recursive();
                         commands.spawn(CollectibleBundle {
-                            transform: Transform::from_translation(*position),
+                            transform,
                             mesh: strange_matter_appearance.mesh.clone(),
                             material: strange_matter_appearance.material.clone(),
                             collectible: Collectible::CollectibleReagent {
@@ -232,6 +238,11 @@ fn handle_shield_collisions(
                             },
                             ..Default::default()
                         });
+                        if let Ok(player_transform) = player_query.get_single() {
+                            let diff = transform.translation - player_transform.translation;
+                            sound_event_writer
+                                .send(SoundEvent::ShieldTransmute { relative_pos: diff })
+                        }
                     }
                     Reagent::Strange => {
                         // Do Nothing

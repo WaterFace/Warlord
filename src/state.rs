@@ -7,6 +7,7 @@ use crate::{
     inventory::{Inventory, Reagent},
     reaction::{Reaction, Reactions},
     shield::ShieldEmitter,
+    sound::SoundEvent,
     ui::{CustomUICamera, EnabledControls},
     weapon::{CargoDumper, MainGun},
 };
@@ -69,6 +70,7 @@ fn exit_exploration_stage(mut query: Query<&mut Inventory>) {
 fn enter_gun_and_heat_stage(
     mut query: Query<(&mut Heat, &mut MainGun)>,
     mut enabled_controls: ResMut<EnabledControls>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for (mut heat, mut main_gun) in &mut query {
         heat.set_enabled(true);
@@ -76,6 +78,7 @@ fn enter_gun_and_heat_stage(
         main_gun.enabled = true;
     }
     *enabled_controls |= EnabledControls::Shoot;
+    sound_event_writer.send(SoundEvent::NextStage);
 }
 
 fn update_gun_and_heat_stage(
@@ -96,12 +99,16 @@ fn exit_gun_and_heat_stage(mut query: Query<&mut Heat>) {
     }
 }
 
-fn enter_collect_exotic_stage(mut query: Query<&mut Inventory>) {
+fn enter_collect_exotic_stage(
+    mut query: Query<&mut Inventory>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
+) {
     for mut inventory in &mut query {
         inventory
             .reagent_mut(Reagent::Exotic)
             .set_threshold(Some(0.9));
     }
+    sound_event_writer.send(SoundEvent::NextStage);
 }
 
 fn update_collect_exotic_stage(
@@ -129,6 +136,7 @@ fn exit_collect_exotic_stage(mut query: Query<&mut Inventory>) {
 fn enter_shield_and_strange_stage(
     mut query: Query<(&mut Inventory, &mut ShieldEmitter, &mut CargoDumper)>,
     mut enabled_controls: ResMut<EnabledControls>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
 ) {
     for (mut inventory, mut shield_emitter, mut cargo_dumper) in &mut query {
         inventory
@@ -138,6 +146,7 @@ fn enter_shield_and_strange_stage(
         cargo_dumper.enabled = true;
     }
     *enabled_controls |= EnabledControls::Dump | EnabledControls::Shield;
+    sound_event_writer.send(SoundEvent::NextStage);
 }
 
 fn update_shield_and_strange_stage(
@@ -162,7 +171,11 @@ fn exit_shield_and_strange_stage(mut query: Query<&mut Inventory>) {
     }
 }
 
-fn enter_continuum_stage(mut query: Query<&mut Inventory>, mut reactions: ResMut<Reactions>) {
+fn enter_continuum_stage(
+    mut query: Query<&mut Inventory>,
+    mut reactions: ResMut<Reactions>,
+    mut sound_event_writer: EventWriter<SoundEvent>,
+) {
     for mut inventory in &mut query {
         inventory
             .reagent_mut(Reagent::Continuum)
@@ -175,6 +188,7 @@ fn enter_continuum_stage(mut query: Query<&mut Inventory>, mut reactions: ResMut
         rate: 1.0,
         result: Some(Reagent::Continuum),
     });
+    sound_event_writer.send(SoundEvent::NextStage);
 }
 
 fn update_continuum_stage(query: Query<&Inventory>, mut stage: ResMut<NextState<ProgressStages>>) {
@@ -203,7 +217,7 @@ pub struct FadeOut {
     timer: Timer,
 }
 
-fn enter_end_stage(mut commands: Commands) {
+fn enter_end_stage(mut commands: Commands, mut sound_event_writer: EventWriter<SoundEvent>) {
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
@@ -220,6 +234,7 @@ fn enter_end_stage(mut commands: Commands) {
         },
         RenderLayers::layer(1), // So the ui camera can see it
     ));
+    sound_event_writer.send(SoundEvent::NextStage);
 }
 
 fn update_end_stage(
