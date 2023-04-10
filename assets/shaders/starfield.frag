@@ -12,6 +12,7 @@ struct StarfieldMaterial {
 
 layout(set = 1, binding = 0) uniform StarfieldMaterial material;
 
+// layout(set = 1, binding = 0) uniform vec4 test;
 // layout(set = 1, binding = 0) uniform vec3 camera_position;
 // layout(set = 1, binding = 1) uniform vec3 resolution;
 // layout(set = 1, binding = 2) uniform float parallax_factor;
@@ -79,9 +80,9 @@ void main() {
   vec2 uv = v_Uv - vec2(0.5) + material.parallax_factor * material.camera_position.xy * vec2(1.0, -1.0) / material.resolution.xy;
   uv.x *= material.resolution.x / material.resolution.y;
 
-  float t = material.time * material.camera_position.z * material.resolution.z;
+  // float t = material.time * material.camera_position.z * material.resolution.z;
 
-  vec3 color = vec3(0.0) + t;
+  vec3 color = vec3(0.0);
 
   color += stars(uv, 50.0/1.3, 0.95) * color_temperature(10000.0) * 3.0;
   color += stars(uv, 25.0/1.3, 0.98) * color_temperature(60000.0) * 25.0;

@@ -6,9 +6,7 @@ use bevy::{
     reflect::TypeUuid,
     render::{
         camera::{CameraOutputMode, CameraRenderGraph, ScalingMode},
-        render_resource::{
-            AsBindGroup, AsBindGroupShaderType, BlendState, LoadOp, ShaderRef, ShaderType,
-        },
+        render_resource::{AsBindGroup, BlendState, LoadOp, ShaderRef, ShaderType},
         view::RenderLayers,
     },
 };
@@ -106,21 +104,25 @@ impl Default for StarfieldCameraBundle {
 
 #[derive(AsBindGroup, TypeUuid, Debug, Clone, ShaderType)]
 #[uuid = "c58cc961-65cf-4eef-b3be-e12b99f55ec5"]
-#[uniform(0, StarfieldMaterialUniform)]
+// #[uniform(0, StarfieldMaterialUniform)]
 pub struct StarfieldMaterial {
+    #[uniform(0)]
     pub camera_position: Vec3,
+    #[uniform(0)]
     pub parallax_factor: f32,
+    #[uniform(0)]
     pub resolution: Vec3,
+    #[uniform(0)]
     pub time: f32,
 }
 
 impl Default for StarfieldMaterial {
     fn default() -> Self {
         Self {
-            parallax_factor: 1.0,
-            time: 0.0,
             camera_position: Vec3::ZERO,
+            parallax_factor: 1.0,
             resolution: Vec3::ZERO,
+            time: 0.0,
         }
     }
 }
@@ -151,27 +153,27 @@ impl Material for StarfieldMaterial {
     }
 }
 
-#[derive(ShaderType)]
-struct StarfieldMaterialUniform {
-    pub camera_position: Vec3,
-    pub parallax_factor: f32,
-    pub resolution: Vec3,
-    pub time: f32,
-}
+// #[derive(ShaderType)]
+// struct StarfieldMaterialUniform {
+//     pub camera_position: Vec2,
+//     // pub parallax_factor: f32,
+//     pub resolution: Vec2,
+//     // pub time: f32,
+// }
 
-impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
-    fn as_bind_group_shader_type(
-        &self,
-        _images: &bevy::render::render_asset::RenderAssets<Image>,
-    ) -> StarfieldMaterialUniform {
-        StarfieldMaterialUniform {
-            parallax_factor: self.parallax_factor,
-            time: self.time,
-            camera_position: self.camera_position,
-            resolution: self.resolution,
-        }
-    }
-}
+// impl AsBindGroupShaderType<StarfieldMaterialUniform> for StarfieldMaterial {
+//     fn as_bind_group_shader_type(
+//         &self,
+//         _images: &bevy::render::render_asset::RenderAssets<Image>,
+//     ) -> StarfieldMaterialUniform {
+//         StarfieldMaterialUniform {
+//             // parallax_factor: self.parallax_factor,
+//             // time: self.time,
+//             camera_position: self.camera_position,
+//             resolution: self.resolution,
+//         }
+//     }
+// }
 
 fn update_starfield_on_resize(
     starfield_camera_query: Query<&Projection, (With<StarfieldCamera>, Changed<Projection>)>,

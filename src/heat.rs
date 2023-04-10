@@ -72,7 +72,7 @@ impl Default for Heat {
             current: 0.0,
             limit: 100.0,
             reaction_threshold: 0.75,
-            threshold_visible: false,
+            threshold_visible: true,
             decay_rate: 25.0,
             decay_timer: Timer::from_seconds(1.5, TimerMode::Once),
         }

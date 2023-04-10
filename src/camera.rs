@@ -33,8 +33,8 @@ impl Default for MainCameraBundle {
     fn default() -> Self {
         Self {
             camera: Camera {
+                #[cfg(not(target_arch = "wasm32"))]
                 hdr: true,
-
                 ..Default::default()
             },
             camera_render_graph: CameraRenderGraph::new(bevy::core_pipeline::core_3d::graph::NAME),
@@ -48,7 +48,10 @@ impl Default for MainCameraBundle {
             transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_to(Vec3::NEG_Z, Vec3::Y),
             global_transform: Default::default(),
             camera_3d: Camera3d {
+                #[cfg(not(target_arch = "wasm32"))]
                 clear_color: ClearColorConfig::None,
+                #[cfg(target_arch = "wasm32")]
+                clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..Default::default()
             },
             tonemapping: Tonemapping::AcesFitted,
@@ -56,6 +59,7 @@ impl Default for MainCameraBundle {
             color_grading: Default::default(),
             bloom_settings: BloomSettings {
                 intensity: 0.5,
+
                 ..Default::default()
             },
             smooth_follow: Default::default(),

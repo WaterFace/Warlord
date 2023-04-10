@@ -74,7 +74,7 @@ fn enter_gun_and_heat_stage(
 ) {
     for (mut heat, mut main_gun) in &mut query {
         heat.set_enabled(true);
-        heat.set_threshold_visible(false);
+        // heat.set_threshold_visible(false);
         main_gun.enabled = true;
     }
     *enabled_controls |= EnabledControls::Shoot;

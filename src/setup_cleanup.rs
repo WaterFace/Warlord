@@ -152,6 +152,7 @@ impl Plugin for SetupCleanupPlugin {
         app.add_system(reset_progress_stage.in_schedule(OnEnter(GameState::MainMenu)));
         app.add_systems(
             (
+                #[cfg(not(target_arch = "wasm32"))]
                 setup_starfield,
                 setup_rocks,
                 setup_reactions,
@@ -163,6 +164,7 @@ impl Plugin for SetupCleanupPlugin {
         );
         app.add_systems(
             (
+                #[cfg(not(target_arch = "wasm32"))]
                 cleanup_starfield,
                 cleanup_player,
                 cleanup_collectibles,

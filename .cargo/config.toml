@@ -31,3 +31,9 @@ rustflags = ["-Zshare-generics=n"]
 # In most cases the gains are negligible, but if you are on macos and have slow compile times you should see significant gains.
 #[profile.dev]
 #debug = 1
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"
+
+[build]
+rustflags = ["--remap-path-prefix", "C:\\Users\\Kevin=~"]
