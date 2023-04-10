@@ -70,7 +70,7 @@ fn set_music_volume(
     audio_sinks: Res<Assets<AudioSink>>,
     background_music: Res<BackgroundMusic>,
 ) {
-    if background_music.is_changed() {
+    if volume.is_changed() {
         let Some(sink) = audio_sinks.get(&background_music.handle) else {debug!("Couldn't find background music!"); return};
         if volume.mute {
             sink.set_volume(0.0);
