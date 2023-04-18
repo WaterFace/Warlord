@@ -404,7 +404,7 @@ fn setup_all_control_displays(mut commands: Commands, asset_server: Res<AssetSer
     setup_control_display(
         &mut commands,
         &asset_server,
-        "Right Mouse",
+        "Space",
         "Shield",
         ControlIndex { index: 3 },
     );

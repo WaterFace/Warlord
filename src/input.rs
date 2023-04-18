@@ -20,6 +20,7 @@ pub fn default_input_map() -> InputMap<Action> {
         (InputKind::Keyboard(KeyCode::D), Action::MoveRight),
         (InputKind::Mouse(MouseButton::Left), Action::FireMainGun),
         (InputKind::Mouse(MouseButton::Right), Action::Shield),
+        (InputKind::Keyboard(KeyCode::Space), Action::Shield),
         (InputKind::Keyboard(KeyCode::F), Action::DumpCargo),
         // TODO: add gamepad inputs
     ])
